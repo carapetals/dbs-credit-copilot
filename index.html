@@ -239,6 +239,14 @@
                 <div class="pill" style="background:var(--track);color:var(--muted2);">Step 1 of 2</div>
               </div>
 
+              <div>
+                <div class="field-label" style="margin-bottom:8px;">Quick-load demo customer</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <div class="pill demo-load-pill" data-demo="horizon" style="cursor:pointer;background:#ecfdf5;color:var(--tealbtn);border:1px solid #a7f3d0;">Horizon Trade Partners (good profile)</div>
+                  <div class="pill demo-load-pill" data-demo="nautica" style="cursor:pointer;background:var(--amberbg);color:var(--amberdark);border:1px solid #fde68a;">Nautica Offshore Marine (high-risk profile)</div>
+                </div>
+              </div>
+
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
                 <div><div class="field-label">Customer name</div><input class="field-box" id="in-customer-name" type="text" value="Horizon Trade Partners Pte Ltd"></div>
                 <div><div class="field-label">Customer ID</div><input class="field-box" id="in-customer-id" type="text" value="CU-4471-90233"></div>
@@ -749,14 +757,19 @@ function renderOverviewAndQueue(){
       : 'background:var(--tealdark);color:var(--tealtext);';
     const row = document.createElement('div');
     row.id = 'overview-latest-row';
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;background:#f0fdfa;margin-bottom:6px;';
+    row.title = 'Click to see why the AI scored this the way it did';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;background:#f0fdfa;margin-bottom:6px;cursor:pointer;';
     row.innerHTML = `
       <div style="flex:1.4;font-weight:600;font-size:13px;">${nameEl ? nameEl.textContent : 'Horizon Trade Partners Pte Ltd'}</div>
       <div style="flex:1;font-size:13px;color:var(--body);">${amtEl ? amtEl.textContent : '—'}</div>
       <div style="flex:1;font-size:13px;color:var(--muted2);">${segEl ? segEl.textContent : '—'}</div>
       <div style="flex:1;"><span class="pill" style="${statusStyle}font-size:12px;">${statusLabel}</span></div>
-      <div style="flex:0.8;text-align:right;font-size:12px;color:var(--tealbtn);font-weight:600;">Just now</div>
+      <div style="flex:0.8;text-align:right;font-size:12px;color:var(--tealbtn);font-weight:600;">Just now &rsaquo;</div>
     `;
+    // Only this row is clickable: it's the one real AI result we're holding
+    // in memory. The static example rows below have no real data behind
+    // them, so they stay inert rather than showing misleading detail.
+    row.addEventListener('click', () => { renderAgentPages(); show('screen-agent-compliance'); });
     list.prepend(row);
   }
 
@@ -817,6 +830,46 @@ document.querySelectorAll('.seg-pill').forEach(p => {
     document.querySelectorAll('.seg-pill').forEach(o => { o.style.background = 'var(--track)'; o.style.color = 'var(--muted2)'; o.classList.remove('active'); });
     p.style.background = 'var(--navy)'; p.style.color = '#fff'; p.classList.add('active');
     syncPreview();
+  });
+});
+
+// --- Quick-load demo customers: one click fills the whole form, so nothing
+// has to be typed or remembered live on stage. ---
+const DEMO_CUSTOMERS = {
+  horizon: {
+    name: 'Horizon Trade Partners Pte Ltd',
+    id: 'CU-4471-90233',
+    amount: 'SGD 450,000.00',
+    tenure: '36 months',
+    segment: 'SME banking',
+    purpose: 'Working capital line to finance imported F&B stock (beverage and packaged snacks) ahead of Q4 distribution contracts. Customer has requested expedited review given supplier payment terms.'
+  },
+  nautica: {
+    name: 'Nautica Offshore Marine Pte Ltd',
+    id: 'CU-8891-27744',
+    amount: 'SGD 600,000.00',
+    tenure: '24 months',
+    segment: 'SME banking',
+    purpose: 'Bridge financing for offshore vessel maintenance ahead of Q1 charter renewals, given delayed payments from an anchor shipping client.'
+  }
+};
+document.querySelectorAll('.demo-load-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    const d = DEMO_CUSTOMERS[p.dataset.demo];
+    if (!d) return;
+    document.getElementById('in-customer-name').value = d.name;
+    document.getElementById('in-customer-id').value = d.id;
+    document.getElementById('in-facility-amount').value = d.amount;
+    document.getElementById('in-tenure').value = d.tenure;
+    document.getElementById('in-purpose').value = d.purpose;
+    document.querySelectorAll('.seg-pill').forEach(o => {
+      const active = o.dataset.segment === d.segment;
+      o.style.background = active ? 'var(--navy)' : 'var(--track)';
+      o.style.color = active ? '#fff' : 'var(--muted2)';
+      o.classList.toggle('active', active);
+    });
+    syncPreview();
+    showToast('Loaded ' + d.name + ' — review and submit when ready.');
   });
 });
 
