@@ -485,7 +485,8 @@
 
             <div style="width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;">
               <div class="card" style="padding:20px;">
-                <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Record decision</div>
+                <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Record decision</div>
+                <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;" id="decision-hint">AI recommends: —</div>
                 <div style="display:flex;flex-direction:column;gap:10px;">
                   <button class="btn" id="btn-return" style="background:#fef2f2;color:#b91c1c;width:100%;height:46px;">Return for edits</button>
                   <button class="btn" id="btn-escalate" style="background:var(--amberbg);color:var(--amberdark);width:100%;height:46px;">Escalate to credit committee</button>
@@ -675,6 +676,15 @@ let complianceBarInterval = null;
 let lastResult = null;
 let lastRunAt = null;
 let lastDecisionStatus = null;
+// Keeps every decided run this session (most recent first), so running
+// Horizon then Nautica shows both in Recent activity instead of the second
+// silently replacing the first. Only the most recent entry is clickable,
+// since the agent tabs only ever hold one run's worth of live data.
+let runHistory = [];
+// Per-customer outcome, used to update that customer's Request queue row
+// once a decision has been recorded (Approved / Escalated), instead of
+// leaving it frozen on its pre-submission placeholder status forever.
+const queueDecisions = {};
 
 function renderAgentPages(){
   const hasRun = lastResult !== null;
@@ -741,47 +751,50 @@ function renderAgentPages(){
 }
 
 function renderOverviewAndQueue(){
-  // Overview: prepend the latest real run above the static example rows
+  // Overview: real, decided runs (most recent first) above the static
+  // example rows. Every decided run stays visible this session instead of
+  // the newest one silently replacing the last, but only the most recent
+  // is clickable — the agent tabs only ever hold one run's worth of data.
   const list = document.getElementById('overview-activity-list');
-  const old = document.getElementById('overview-latest-row');
-  if (old) old.remove();
-  if (lastResult && list) {
-    const nameEl = document.querySelector('.js-customer-name');
-    const amtEl = document.querySelector('.js-facility-amount');
-    const segEl = document.querySelector('.js-segment');
-    const band = (lastResult.compliance && lastResult.compliance.risk_band) || 'Scored';
-    const statusLabel = lastDecisionStatus || band;
-    const statusStyle = lastDecisionStatus === 'Approved'
-      ? 'background:#ecfdf5;color:var(--tealbtn);'
-      : lastDecisionStatus === 'Escalated'
-      ? 'background:var(--amberbg);color:var(--amberdark);'
-      : 'background:var(--tealdark);color:var(--tealtext);';
-    const row = document.createElement('div');
-    row.id = 'overview-latest-row';
-    row.title = 'Click to see why the AI scored this the way it did';
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;background:#f0fdfa;margin-bottom:6px;cursor:pointer;';
-    row.innerHTML = `
-      <div style="flex:1.4;font-weight:600;font-size:13px;">${nameEl ? nameEl.textContent : 'Horizon Trade Partners Pte Ltd'}</div>
-      <div style="flex:1;font-size:13px;color:var(--body);">${amtEl ? amtEl.textContent : '—'}</div>
-      <div style="flex:1;font-size:13px;color:var(--muted2);">${segEl ? segEl.textContent : '—'}</div>
-      <div style="flex:1;"><span class="pill" style="${statusStyle}font-size:12px;">${statusLabel}</span></div>
-      <div style="flex:0.8;text-align:right;font-size:12px;color:var(--tealbtn);font-weight:600;">Just now &rsaquo;</div>
-    `;
-    // Only this row is clickable: it's the one real AI result we're holding
-    // in memory. The static example rows below have no real data behind
-    // them, so they stay inert rather than showing misleading detail.
-    row.addEventListener('click', () => { renderAgentPages(); show('screen-agent-compliance'); });
-    list.prepend(row);
+  if (list) {
+    list.querySelectorAll('.overview-real-row').forEach(el => el.remove());
+    const frag = document.createDocumentFragment();
+    runHistory.forEach((run, idx) => {
+      const isLatest = idx === 0;
+      const statusStyle = run.decisionStatus === 'Approved'
+        ? 'background:#ecfdf5;color:var(--tealbtn);'
+        : run.decisionStatus === 'Escalated'
+        ? 'background:var(--amberbg);color:var(--amberdark);'
+        : 'background:var(--tealdark);color:var(--tealtext);';
+      const row = document.createElement('div');
+      row.className = 'overview-real-row';
+      row.title = isLatest ? 'Click to see why the AI scored this the way it did' : '';
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;margin-bottom:6px;'
+        + (isLatest ? 'background:#f0fdfa;cursor:pointer;' : 'background:transparent;border-bottom:1px solid var(--line);');
+      row.innerHTML = `
+        <div style="flex:1.4;font-weight:600;font-size:13px;">${run.name}</div>
+        <div style="flex:1;font-size:13px;color:var(--body);">${run.amount}</div>
+        <div style="flex:1;font-size:13px;color:var(--muted2);">${run.segment}</div>
+        <div style="flex:1;"><span class="pill" style="${statusStyle}font-size:12px;">${run.decisionStatus}</span></div>
+        <div style="flex:0.8;text-align:right;font-size:12px;color:${isLatest ? 'var(--tealbtn)' : 'var(--muted)'};font-weight:600;">${isLatest ? 'Just now &rsaquo;' : run.runAt}</div>
+      `;
+      if (isLatest) row.addEventListener('click', () => { renderAgentPages(); show('screen-agent-compliance'); });
+      frag.appendChild(row);
+    });
+    list.prepend(frag);
   }
 
   // Request queue: representative example rows (this prototype doesn't
   // persist a real queue backend, so these are static, clearly-plausible
-  // records consistent with the "9 open, oldest waiting 6h" summary)
+  // records consistent with the "9 open, oldest waiting 6h" summary).
+  // Horizon and Nautica start on the same "Awaiting review" status, since
+  // neither has actually been through an agent yet — once a decision is
+  // recorded for one (see recordDecision), its row picks that up here.
   const queueEl = document.getElementById('queue-rows');
   if (!queueEl) return;
   const queueData = [
-    ['CR-20264-0079','Horizon Trade Partners','S$450,000','SME banking','Pending compliance','12m','horizon'],
-    ['CR-20264-0080','Nautica Offshore Marine','S$600,000','SME banking','Awaiting RM','38m','nautica'],
+    ['CR-20264-0079','Horizon Trade Partners','S$450,000','SME banking','Awaiting review','12m','horizon'],
+    ['CR-20264-0080','Nautica Offshore Marine','S$600,000','SME banking','Awaiting review','38m','nautica'],
     ['CR-20264-0085','Ah Seng Wholesale Foods','S$92,000','Priority','Ready for synthesis','2h'],
     ['CR-20264-0086','Bright Spark Electricals','S$410,000','SME banking','Pending compliance','2h'],
     ['CR-20264-0087','Marina Bay Concierge Group','S$150,000','Priority','Flagged','3h'],
@@ -790,9 +803,15 @@ function renderOverviewAndQueue(){
     ['CR-20264-0090','Little India Textiles Co','S$68,000','Priority','Ready for synthesis','5h'],
     ['CR-20264-0092','Kembangan Auto Parts','S$525,000','SME banking','Flagged','6h']
   ];
-  const statusColor = (s) => s==='Flagged' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'} : s==='Ready for synthesis' ? {bg:'#ecfdf5',fg:'var(--tealbtn)'} : {bg:'var(--track)',fg:'var(--muted2)'};
+  const statusColor = (s) => s==='Flagged' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'}
+    : (s==='Ready for synthesis' || s==='Approved') ? {bg:'#ecfdf5',fg:'var(--tealbtn)'}
+    : s==='Escalated' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'}
+    : {bg:'var(--track)',fg:'var(--muted2)'};
   queueEl.innerHTML = queueData.map(([ref,name,amt,seg,status,wait,demoKey]) => {
-    const c = statusColor(status);
+    const decision = demoKey && queueDecisions[DEMO_CUSTOMERS[demoKey].id];
+    const effectiveStatus = decision ? decision.status : status;
+    const effectiveWait = decision ? 'Just now' : wait;
+    const c = statusColor(effectiveStatus);
     const isDemo = !!demoKey;
     const rowAttrs = isDemo
       ? `class="queue-demo-row" data-demo="${demoKey}" title="Click to open this request pre-filled" style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;background:#f8fafc;"`
@@ -802,8 +821,8 @@ function renderOverviewAndQueue(){
       <div style="flex:1.4;font-weight:600;">${name}${isDemo ? ' <span style="color:var(--tealbtn);">&rsaquo;</span>' : ''}</div>
       <div style="flex:1;color:var(--body);">${amt}</div>
       <div style="flex:1;color:var(--muted2);">${seg}</div>
-      <div style="flex:1;"><span class="pill" style="background:${c.bg};color:${c.fg};font-size:12px;">${status}</span></div>
-      <div style="flex:0.8;text-align:right;color:var(--muted);">${wait}</div>
+      <div style="flex:1;"><span class="pill" style="background:${c.bg};color:${c.fg};font-size:12px;">${effectiveStatus}</span></div>
+      <div style="flex:0.8;text-align:right;color:var(--muted);">${effectiveWait}</div>
     </div>`;
   }).join('');
   queueEl.querySelectorAll('.queue-demo-row').forEach(row => {
@@ -927,10 +946,38 @@ document.getElementById('btn-return').addEventListener('click', () => {
   show('screen-main');
   showToast('Sent back for edits — form re-opened.');
 });
-document.getElementById('btn-escalate').addEventListener('click', () => {
-  lastDecisionStatus = 'Escalated';
-  showToast('Escalated to credit committee — awaiting senior review.');
+// Records the RM's decision against the run that's currently loaded, then
+// shows Overview. This is a manual human-in-the-loop action, independent
+// of the AI's own recommendation text on the memo — see recordDecision's
+// use below for why that distinction matters on stage.
+function recordDecision(status, toastMsg){
+  lastDecisionStatus = status;
+  if (lastResult) {
+    const custId = REQUEST_PARAMS.customer_id;
+    const nameEl = document.querySelector('.js-customer-name');
+    const amtEl = document.querySelector('.js-facility-amount');
+    const segEl = document.querySelector('.js-segment');
+    const band = (lastResult.compliance && lastResult.compliance.risk_band) || 'Scored';
+    const runAt = lastRunAt;
+    // Replace any earlier entry for the same customer rather than stacking
+    // duplicates if the same company gets resubmitted.
+    runHistory = runHistory.filter(r => r.customerId !== custId);
+    runHistory.unshift({
+      customerId: custId,
+      name: nameEl ? nameEl.textContent : '—',
+      amount: amtEl ? amtEl.textContent : '—',
+      segment: segEl ? segEl.textContent : '—',
+      band, decisionStatus: status, runAt
+    });
+    if (runHistory.length > 5) runHistory.length = 5;
+    queueDecisions[custId] = { status, band, runAt };
+  }
+  showToast(toastMsg);
   setTimeout(() => { renderOverviewAndQueue(); show('screen-overview'); }, 1100);
+}
+
+document.getElementById('btn-escalate').addEventListener('click', () => {
+  recordDecision('Escalated', 'Escalated to credit committee — awaiting senior review.');
 });
 
 document.getElementById('btn-submit').addEventListener('click', async () => {
@@ -1171,14 +1218,25 @@ function populateResults(data){
   document.getElementById('covering-note').textContent = (m.covering_note ? m.covering_note + ' ' : '') + "A webhook sends the memo and supporting data to the credit compliance supervisor's inbox and logs the decision to the audit sheet.";
 
   document.getElementById('req-date').textContent = new Date().toLocaleDateString('en-SG', {day:'numeric', month:'short', year:'numeric'});
+
+  // The Approve/Escalate buttons are a manual RM decision, independent of
+  // the AI's own recommendation — so highlight which one the memo actually
+  // recommends, to avoid clicking the mismatched one live (e.g. approving a
+  // High-risk memo that recommended escalation).
+  const rating = c.rating ?? 0;
+  const recommendEscalate = rating >= 60;
+  const hint = document.getElementById('decision-hint');
+  const btnApprove = document.getElementById('btn-approve');
+  const btnEscalate = document.getElementById('btn-escalate');
+  if (hint) hint.textContent = 'AI recommends: ' + (recommendEscalate ? 'Escalate to credit committee' : 'Approve');
+  if (btnApprove) btnApprove.style.boxShadow = recommendEscalate ? 'none' : '0 0 0 2px var(--tealbtn)';
+  if (btnEscalate) btnEscalate.style.boxShadow = recommendEscalate ? '0 0 0 2px var(--amberdark)' : 'none';
 }
 
 document.getElementById('btn-continue').addEventListener('click', () => show('screen-decision'));
 
 document.getElementById('btn-approve').addEventListener('click', () => {
-  lastDecisionStatus = 'Approved';
-  showToast('Approved — memo sent to compliance and logged to the audit sheet.');
-  setTimeout(() => { renderOverviewAndQueue(); show('screen-overview'); }, 1100);
+  recordDecision('Approved', 'Approved — memo sent to compliance and logged to the audit sheet.');
 });
 
 // Initialize: example data on agent pages, correct sidebar highlight
