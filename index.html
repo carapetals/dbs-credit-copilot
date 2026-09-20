@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DBS Credit Orchestration — Live Demo</title>
+<style>
+  :root{
+    --navy:#0b1830; --navy2:#132244; --navy3:#1e2c4d; --tealdark:#0f3d38;
+    --teal:#2dd4bf; --tealtext:#5eead4; --tealbtn:#0f9c93;
+    --red:#e2231a; --bg:#eef1f5;
+    --amber:#f59e0b; --amberdark:#b45309; --amberbg:#fff7ed; --ambertrack:#fde8c8;
+    --ink:#0f172a; --navtext:#475569; --muted2:#64748b; --muted:#94a3b8; --body:#334155;
+    --line:#e3e7ef; --card:#f8fafc; --track:#f1f4f9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:var(--ink);}
+  .app{display:flex;width:100%;height:100vh;overflow:hidden;}
+  .navitem{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;font-size:14px;color:var(--navtext);}
+  .navlabel{font-size:11px;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:0 14px;margin-top:6px;}
+  .pill{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600;}
+  .btn{border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;padding:0 20px;height:42px;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
+  input,textarea{font-family:inherit;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;}
+  .fade{animation:fade .35s ease both;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#d7dce4;border-radius:8px;}
+
+  /* Sidebar */
+  .sidebar{width:272px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);box-sizing:border-box;padding:26px 18px;display:flex;flex-direction:column;gap:6px;}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 8px 22px 8px;}
+  .brand img{height:26px;width:auto;}
+  .brand-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.2;}
+  .brand-sub{font-size:12px;color:var(--muted);line-height:1.2;}
+  .live-card{background:var(--navy);border-radius:14px;padding:16px;color:#fff;}
+  .live-dot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tealtext);font-weight:600;}
+  .live-dot span{width:7px;height:7px;border-radius:999px;background:var(--teal);}
+
+  /* Main column */
+  .main{flex-grow:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{height:76px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 36px;border-bottom:1px solid var(--line);background:#fff;box-sizing:border-box;}
+  .search{width:380px;height:38px;border-radius:10px;background:var(--track);display:flex;align-items:center;padding:0 14px;color:var(--muted);font-size:14px;}
+  .avatar{width:34px;height:34px;border-radius:999px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .whoami{font-size:13px;font-weight:700;}
+  .whorole{font-size:12px;color:var(--muted);}
+  .content{flex-grow:1;padding:32px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px;overflow:auto;}
+  .h1{font-size:26px;font-weight:800;}
+  .sub{font-size:14px;color:var(--muted2);margin-top:4px;}
+
+  .field-label{font-size:12px;color:var(--muted2);margin-bottom:6px;}
+  .field-box{height:44px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;padding:0 14px;font-size:14px;font-weight:600;}
+  .field-area{border-radius:10px;background:var(--card);border:1px solid var(--line);padding:12px 14px;font-size:14px;color:var(--body);line-height:1.5;}
+
+  /* screens visibility */
+  .screen{display:none;flex-grow:1;min-height:0;}
+  .screen.active{display:flex;}
+
+  /* Processing agent rows */
+  .agent-row{border-radius:12px;padding:14px 16px;}
+  .agent-dot{width:10px;height:10px;border-radius:999px;}
+  .track{height:6px;border-radius:999px;background:var(--track);overflow:hidden;margin-top:10px;}
+  .track > div{height:100%;}
+
+  /* Gauge */
+  .gauge{width:220px;height:220px;border-radius:999px;border:20px solid #1e2c4d;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+
+  .spin{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .8s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 10px 30px rgba(11,24,48,.3);display:none;align-items:center;gap:10px;z-index:50;}
+  .toast.show{display:flex;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <img id="logo" src="" alt="DBS">
+      <div>
+        <div class="brand-name">Credit Orchestration</div>
+        <div class="brand-sub">SME &amp; Corporate Banking</div>
+      </div>
+    </div>
+
+    <div class="navlabel">MAIN</div>
+    <div class="navitem"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Overview</div>
+    <div class="navitem" style="justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:12px;"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Request queue</span>
+      <span style="background:#fee2e2;color:var(--red);font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;">9</span>
+    </div>
+    <div class="navitem" id="nav-newreq" style="background:var(--navy);color:#fff;font-weight:600;">
+      <span style="width:8px;height:8px;border-radius:999px;background:var(--teal);"></span>New request
+    </div>
+
+    <div class="navlabel">AGENTS</div>
+    <div class="navitem" id="nav-retrieval"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Retrieval agent</div>
+    <div class="navitem" id="nav-compliance"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Compliance agent</div>
+    <div class="navitem" id="nav-synthesis"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Synthesis agent</div>
+    <div class="navitem"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Workflow logic</div>
+
+    <div style="flex-grow:1;"></div>
+
+    <div class="live-card">
+      <div class="live-dot"><span></span>Workflow live</div>
+      <div style="font-size:14px;font-weight:700;margin-top:8px;">Make.com scenario</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;">3-agent chain &middot; Google Gemini 2.5</div>
+    </div>
+  </div>
+
+  <!-- MAIN COLUMN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="search">Search customer or reference</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar">AT</div>
+        <div><div class="whoami">Alex Tan</div><div class="whorole">Relationship manager</div></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- SCREEN 1: NEW REQUEST -->
+      <div class="screen active" id="screen-main">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div class="h1">New credit assessment request</div>
+              <div class="sub">Submitted for AI-assisted memo drafting</div>
+            </div>
+            <div class="pill" style="background:#fff;border:1px solid var(--line);color:#334155;"><span style="width:7px;height:7px;border-radius:999px;background:var(--red);margin-right:8px;display:inline-block;"></span>CR-20264-0091</div>
+          </div>
+
+          <div style="display:flex;gap:24px;flex-grow:1;min-height:0;">
+            <div class="card" style="flex:2;padding:28px 30px;display:flex;flex-direction:column;gap:18px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="font-size:17px;font-weight:700;">Facility details</div>
+                <div class="pill" style="background:var(--track);color:var(--muted2);">Step 1 of 2</div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
+                <div><div class="field-label">Customer name</div><div class="field-box">Horizon Trade Partners Pte Ltd</div></div>
+                <div><div class="field-label">Customer ID</div><div class="field-box">CU-4471-90233</div></div>
+                <div><div class="field-label">Facility amount requested</div><div class="field-box">SGD 450,000.00</div></div>
+                <div><div class="field-label">Tenure</div><div class="field-box">36 months</div></div>
+              </div>
+
+              <div>
+                <div class="field-label" style="margin-bottom:8px;">Segment</div>
+                <div style="display:flex;gap:10px;">
+                  <div class="pill" style="background:var(--navy);color:#fff;">SME banking</div>
+                  <div class="pill" style="background:var(--track);color:var(--muted2);">Corporate</div>
+                  <div class="pill" style="background:var(--track);color:var(--muted2);">Priority</div>
+                </div>
+              </div>
+
+              <div style="flex-grow:1;">
+                <div class="field-label">Purpose of facility</div>
+                <div class="field-area" style="height:96px;">Working capital line to finance imported F&amp;B stock (beverage and packaged snacks) ahead of Q4 distribution contracts. Customer has requested expedited review given supplier payment terms.</div>
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;">
+                <div style="font-size:12px;color:var(--muted);" id="submit-hint">Runs 3 agents &middot; typically under 10 seconds</div>
+                <div style="display:flex;gap:10px;">
+                  <button class="btn" style="background:var(--track);color:#334155;">Save draft</button>
+                  <button class="btn" id="btn-submit" style="background:var(--tealbtn);color:#fff;">Submit for AI assessment</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex:1;display:flex;flex-direction:column;gap:18px;min-width:0;">
+              <div style="background:var(--navy);border-radius:18px;padding:22px;color:#fff;">
+                <div style="font-size:13px;color:var(--muted);">Facility on request</div>
+                <div style="font-size:32px;font-weight:800;margin-top:6px;">S$450,000.00</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px;">Routes to compliance &amp; synthesis agents on submit</div>
+                <div style="display:flex;gap:8px;margin-top:14px;">
+                  <div class="pill" style="background:var(--navy2);color:#e2e8f0;">SME banking</div>
+                  <div class="pill" style="background:var(--tealdark);color:var(--tealtext);">New request</div>
+                </div>
+              </div>
+              <div class="card" style="padding:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Customer snapshot</div>
+                <div style="display:flex;flex-direction:column;gap:11px;font-size:13px;">
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Relationship since</span><span style="font-weight:600;">2019</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Existing facilities</span><span style="font-weight:600;">S$180,000</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Repayment history</span><span class="pill" style="background:#ecfdf5;color:var(--tealbtn);padding:2px 9px;font-size:12px;">On time</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Open queries</span><span style="font-weight:600;">None</span></div>
+                </div>
+              </div>
+              <div class="card" style="padding:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:10px;">Why this routes to review</div>
+                <div style="font-size:13px;color:var(--body);line-height:1.55;">Unsecured facilities above S$300,000 require compliance scoring before a memo can be drafted.</div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  <div class="pill" style="background:var(--track);color:var(--body);padding:4px 10px;font-size:12px;">Rule C12</div>
+                  <div class="pill" style="background:var(--track);color:var(--body);padding:4px 10px;font-size:12px;">Rule R05</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: PROCESSING -->
+      <div class="screen" id="screen-processing">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div class="h1">Running orchestration</div>
+              <div class="sub">Horizon Trade Partners Pte Ltd &middot; S$450,000.00 &middot; SME banking</div>
+            </div>
+            <button class="btn" style="background:#fff;border:1px solid var(--line);color:#334155;">Cancel run</button>
+          </div>
+
+          <div style="display:flex;gap:24px;flex-grow:1;min-height:0;">
+            <div style="flex:2;display:flex;flex-direction:column;gap:20px;min-width:0;">
+              <div style="background:var(--navy);border-radius:18px;padding:24px 26px;color:#fff;">
+                <div style="font-size:13px;color:var(--muted);">Agents complete</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:6px;">
+                  <div style="font-size:40px;font-weight:800;"><span id="agents-done">0</span> <span style="font-size:20px;color:var(--muted);font-weight:600;">of 3</span></div>
+                  <div style="display:flex;gap:28px;">
+                    <div><div style="font-size:12px;color:var(--muted);">Elapsed</div><div style="font-size:18px;font-weight:700;" id="elapsed">0.0s</div></div>
+                    <div><div style="font-size:12px;color:var(--muted);">Interim rating</div><div style="font-size:18px;font-weight:700;color:var(--tealtext);" id="interim">Pending</div></div>
+                  </div>
+                </div>
+                <div class="track" style="background:var(--navy3);margin-top:16px;"><div id="overall-bar" style="width:0%;background:var(--teal);transition:width .4s;"></div></div>
+              </div>
+
+              <div class="card" style="padding:22px;flex-grow:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;">
+                <div style="font-size:15px;font-weight:700;">Agents</div>
+
+                <div class="agent-row" id="row-retrieval" style="background:var(--track);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div class="agent-dot" style="background:#cbd5e1;" id="dot-retrieval"></div>
+                      <div>
+                        <div style="font-size:14px;font-weight:700;" id="title-retrieval" style="color:var(--muted);">Retrieval agent</div>
+                        <div style="font-size:12px;color:var(--muted);">Pulls credit history &amp; existing facilities from data lake</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-retrieval">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-retrieval">est. 1.1s</div></div>
+                  </div>
+                </div>
+
+                <div class="agent-row" id="row-compliance" style="background:var(--track);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div class="agent-dot" style="background:#cbd5e1;" id="dot-compliance"></div>
+                      <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--muted);" id="title-compliance">Compliance agent</div>
+                        <div style="font-size:12px;color:var(--muted);">Scores AML/KYC risk &amp; exposure limits</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-compliance">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-compliance">est. 3.2s</div></div>
+                  </div>
+                  <div class="track" id="track-compliance" style="display:none;"><div id="bar-compliance" style="width:0%;background:var(--amber);"></div></div>
+                </div>
+
+                <div class="agent-row" id="row-synthesis" style="background:var(--track);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div class="agent-dot" style="background:#cbd5e1;" id="dot-synthesis"></div>
+                      <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--muted);" id="title-synthesis">Synthesis agent</div>
+                        <div style="font-size:12px;color:var(--muted);">Will draft credit memorandum</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-synthesis">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-synthesis">est. 2.4s</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex:1;display:flex;flex-direction:column;gap:18px;min-width:0;">
+              <div class="card" style="padding:20px;flex-grow:1;overflow:auto;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Live log</div>
+                <div style="display:flex;flex-direction:column;gap:13px;font-size:13px;" id="live-log"></div>
+              </div>
+              <div class="card" style="padding:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Signals in play</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <span class="pill" style="background:var(--track);color:var(--body);">Credit score</span>
+                  <span class="pill" style="background:var(--track);color:var(--body);">Existing exposure</span>
+                  <span class="pill" style="background:var(--track);color:var(--body);">Repayment consistency</span>
+                  <span class="pill" style="background:var(--track);color:var(--body);">Industry concentration</span>
+                </div>
+              </div>
+              <div style="background:var(--track);border-radius:14px;padding:16px;font-size:12px;color:var(--muted2);line-height:1.5;">Partial results are advisory. The memo is only drafted once all three agents finish.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: COMPLIANCE RATING -->
+      <div class="screen" id="screen-memo">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div class="h1">Compliance rating</div>
+              <div class="sub">CR-20264-0091 &middot; completed in <span id="run-time">6.2s</span> &middot; agents v1.0</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn" style="background:#fff;border:1px solid var(--line);color:#475569;">Export</button>
+              <button class="btn" id="btn-continue" style="background:var(--tealbtn);color:#fff;">Continue to memo</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:24px;flex-grow:1;min-height:0;">
+            <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
+              <div style="background:var(--navy);border-radius:18px;padding:26px;color:#fff;flex-grow:1;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div style="font-size:15px;font-weight:700;">Overall compliance rating</div>
+                  <div class="pill" style="background:var(--tealdark);color:var(--tealtext);" id="risk-band-pill">Low-medium risk</div>
+                </div>
+                <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;">
+                  <div class="gauge" id="gauge">
+                    <div style="font-size:54px;font-weight:800;" id="rating-num">34</div>
+                    <div style="font-size:13px;color:var(--muted);">out of 100</div>
+                  </div>
+                </div>
+                <div style="margin-top:10px;">
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);"><span>Model confidence</span><span id="confidence-pct">91%</span></div>
+                  <div class="track" style="background:var(--navy3);margin-top:8px;"><div id="confidence-bar" style="width:91%;background:var(--teal);"></div></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:14px;"><span>Memo-drafting threshold</span><span style="color:#e2e8f0;font-weight:600;">&lt; 60</span></div>
+              </div>
+            </div>
+
+            <div style="flex:1.4;display:flex;flex-direction:column;gap:20px;min-width:0;">
+              <div class="card" style="padding:22px;flex-grow:1;overflow:auto;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:16px;">Contributing signals</div>
+                <div style="display:flex;flex-direction:column;gap:14px;" id="signals-list"></div>
+              </div>
+
+              <div class="card" style="padding:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Recommendation</div>
+                <div style="font-size:13px;color:#475569;line-height:1.55;" id="compliance-recommendation">Proceed to memo synthesis under standard terms. Flag industry concentration for the RM's covering note.</div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  <span class="pill" style="background:#ecfdf5;color:var(--tealbtn);">Repayment strong</span>
+                  <span class="pill" style="background:var(--amberbg);color:var(--amberdark);">Industry flag</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: DECISION -->
+      <div class="screen" id="screen-decision">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div class="h1">Memo ready for review</div>
+              <div class="sub">Your name and the AI assessment are attached to the audit record</div>
+            </div>
+            <div class="pill" style="background:var(--navy);color:#fff;">Rating&nbsp;<span id="decision-rating">34</span>&nbsp;/&nbsp;100</div>
+          </div>
+
+          <div style="display:flex;gap:22px;flex-grow:1;min-height:0;">
+            <div class="card" style="flex:1;padding:22px;display:flex;flex-direction:column;gap:14px;overflow:auto;">
+              <div style="font-size:15px;font-weight:700;">Facility</div>
+              <div style="font-size:30px;font-weight:800;">S$450,000.00</div>
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;margin-top:6px;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Reference</span><span style="font-weight:600;">CR-20264-0091</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Customer</span><span style="font-weight:600;">Horizon Trade Partners</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Segment</span><span style="font-weight:600;">SME banking</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Tenure</span><span style="font-weight:600;">36 months</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Requested</span><span style="font-weight:600;" id="req-date">today</span></div>
+              </div>
+              <div style="background:var(--card);border-radius:12px;padding:14px;margin-top:auto;">
+                <div style="font-size:12px;color:var(--muted2);margin-bottom:4px;">Stated purpose</div>
+                <div style="font-size:13px;color:#334155;line-height:1.5;">Working capital line to finance imported F&amp;B stock ahead of Q4 distribution contracts.</div>
+              </div>
+            </div>
+
+            <div class="card" style="flex:1;padding:22px;display:flex;flex-direction:column;gap:12px;overflow:auto;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="font-size:15px;font-weight:700;">Draft memo preview</div>
+                <span class="pill" style="background:#ecfdf5;color:var(--tealbtn);font-size:12px;">Traceable</span>
+              </div>
+              <div style="background:var(--card);border-radius:12px;padding:16px;font-size:13px;line-height:1.65;color:#334155;flex-grow:1;overflow:auto;">
+                <strong>Recommendation:</strong> <span id="memo-recommendation">—</span><br><br>
+                <strong>Basis:</strong> <span id="memo-basis">—</span><br><br>
+                <strong>Compliance:</strong> <span id="memo-compliance">—</span>
+              </div>
+              <div style="font-size:12px;color:var(--muted);">Generated by synthesis agent &middot; every figure links back to its source record</div>
+            </div>
+
+            <div style="width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;">
+              <div class="card" style="padding:20px;">
+                <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Record decision</div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <button class="btn" style="background:#fef2f2;color:#b91c1c;width:100%;height:46px;">Return for edits</button>
+                  <button class="btn" style="background:var(--amberbg);color:var(--amberdark);width:100%;height:46px;">Escalate to credit committee</button>
+                  <button class="btn" id="btn-approve" style="background:var(--tealbtn);color:#fff;width:100%;height:46px;">Approve &amp; send to compliance</button>
+                </div>
+              </div>
+              <div style="background:var(--navy);border-radius:18px;padding:18px;color:#fff;">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px;">On approval</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.6;" id="covering-note">A webhook sends the memo and supporting data to the credit compliance supervisor's inbox and logs the decision to the audit sheet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span>&#10003;</span><span id="toast-text">Approved &amp; sent to compliance</span></div>
+
+<script>
+const WEBHOOK_URL = "https://hook.eu1.make.com/deb6hxnteaxqprs2amt9d10kfqzfs6vr";
+const LOGO_URL = "data:image/png;base64,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";
+
+document.getElementById('logo').src = LOGO_URL;
+
+const REQUEST_PARAMS = {
+  customer_id: "CU-4471-90233",
+  loan_amount: "450000",
+  tenure_months: "36",
+  purpose: "Working capital line to finance imported F&B stock ahead of Q4 distribution contracts",
+  rm_name: "Alex Tan",
+  segment: "SME banking"
+};
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setAgent(name, status, color, textColor){
+  document.getElementById('dot-'+name).style.background = color;
+  document.getElementById('title-'+name).style.color = textColor || '#0f172a';
+  const st = document.getElementById('status-'+name);
+  st.textContent = status;
+  st.style.color = color;
+}
+
+let result = null;
+let startTime = null;
+let elapsedTimer = null;
+
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  document.getElementById('btn-submit').disabled = true;
+  show('screen-processing');
+  runProcessingAnimation();
+
+  const qs = new URLSearchParams(REQUEST_PARAMS).toString();
+  try {
+    const res = await fetch(WEBHOOK_URL + '?' + qs);
+    const text = await res.text();
+    result = JSON.parse(text);
+  } catch (e) {
+    console.error(e);
+    result = null;
+  }
+});
+
+function runProcessingAnimation(){
+  startTime = Date.now();
+  document.getElementById('agents-done').textContent = '0';
+  document.getElementById('overall-bar').style.width = '0%';
+  document.getElementById('interim').textContent = 'Pending';
+  const log = document.getElementById('live-log');
+  log.innerHTML = '';
+
+  function addLog(t, msg, warn){
+    const row = document.createElement('div');
+    row.style.display = 'flex'; row.style.gap = '12px';
+    row.innerHTML = '<span style="color:#94a3b8;width:34px;">'+t+'</span><span style="'+(warn?'color:#b45309;font-weight:600;':'')+'">'+msg+'</span>';
+    log.prepend(row);
+  }
+
+  elapsedTimer = setInterval(()=>{
+    const s = (Date.now()-startTime)/1000;
+    document.getElementById('elapsed').textContent = s.toFixed(1)+'s';
+  }, 100);
+
+  addLog('0.2s', 'Case opened, Make.com scenario triggered');
+
+  setTimeout(()=>{
+    setAgent('retrieval','Complete','#0f9c93');
+    document.getElementById('row-retrieval').style.background = '#ecfdf5';
+    document.getElementById('time-retrieval').textContent = '1.1s';
+    document.getElementById('agents-done').textContent = '1';
+    document.getElementById('overall-bar').style.width = '33%';
+    addLog('1.1s', 'Retrieval: customer record CU-4471-90233 located');
+    addLog('2.0s', 'Retrieval: 14 prior transactions matched');
+  }, 900);
+
+  setTimeout(()=>{
+    setAgent('compliance','Running','#f59e0b');
+    document.getElementById('row-compliance').style.background = '#fff7ed';
+    document.getElementById('track-compliance').style.display = 'block';
+    document.getElementById('interim').textContent = 'Scoring…';
+    let p = 0;
+    const iv = setInterval(()=>{
+      p = Math.min(p + 12, 92);
+      document.getElementById('bar-compliance').style.width = p+'%';
+      if (p >= 92) clearInterval(iv);
+    }, 220);
+    addLog('3.2s', 'Compliance: flagged industry concentration, F&amp;B distribution sector', true);
+  }, 1500);
+
+  // Wait for real result before finishing compliance + synthesis
+  const poll = setInterval(()=>{
+    if (result !== null){
+      clearInterval(poll);
+      finishProcessing();
+    }
+  }, 150);
+}
+
+function finishProcessing(){
+  clearInterval(elapsedTimer);
+  const totalTime = ((Date.now()-startTime)/1000).toFixed(1);
+
+  setAgent('compliance','Complete','#0f9c93');
+  document.getElementById('row-compliance').style.background = '#ecfdf5';
+  document.getElementById('bar-compliance').style.width = '100%';
+  document.getElementById('time-compliance').textContent = totalTime+'s';
+  document.getElementById('agents-done').textContent = '2';
+  document.getElementById('overall-bar').style.width = '66%';
+
+  if (result && result.compliance){
+    document.getElementById('interim').textContent = result.compliance.risk_band || 'Scored';
+  }
+
+  setTimeout(()=>{
+    setAgent('synthesis','Complete','#0f9c93');
+    document.getElementById('row-synthesis').style.background = '#ecfdf5';
+    document.getElementById('time-synthesis').textContent = ((Date.now()-startTime)/1000).toFixed(1)+'s';
+    document.getElementById('agents-done').textContent = '3';
+    document.getElementById('overall-bar').style.width = '100%';
+    document.getElementById('run-time').textContent = ((Date.now()-startTime)/1000).toFixed(1)+'s';
+
+    if (result) populateResults(result);
+    setTimeout(()=> show('screen-memo'), 500);
+  }, 700);
+}
+
+function populateResults(data){
+  const c = data.compliance || {};
+  const m = data.memo || {};
+
+  document.getElementById('rating-num').textContent = c.rating ?? '—';
+  document.getElementById('decision-rating').textContent = c.rating ?? '—';
+  document.getElementById('risk-band-pill').textContent = c.risk_band || '—';
+  document.getElementById('confidence-pct').textContent = (c.confidence_pct ?? '—') + '%';
+  document.getElementById('confidence-bar').style.width = (c.confidence_pct ?? 0) + '%';
+
+  // gauge ring color/fill based on rating band
+  const gauge = document.getElementById('gauge');
+  gauge.style.borderTopColor = '#2dd4bf';
+  gauge.style.borderRightColor = (c.rating ?? 0) > 25 ? '#2dd4bf' : '#1e2c4d';
+
+  const signalsList = document.getElementById('signals-list');
+  signalsList.innerHTML = '';
+  (c.signals || []).forEach(sig => {
+    const positive = sig.points < 0; // negative points = risk-reducing = good
+    const color = positive ? '#0f9c93' : '#f59e0b';
+    const width = Math.min(Math.abs(sig.points) * 2, 100);
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="font-weight:600;">${sig.label}</span><span style="color:${color};font-weight:700;">${sig.points > 0 ? '+' : '−'}${Math.abs(sig.points)}</span></div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">${sig.detail || ''}</div>
+      <div class="track"><div style="width:${width}%;background:${color};"></div></div>
+    `;
+    signalsList.appendChild(row);
+  });
+
+  document.getElementById('compliance-recommendation').textContent = c.recommendation || '';
+
+  document.getElementById('memo-recommendation').textContent = m.recommendation || '—';
+  document.getElementById('memo-basis').textContent = m.basis || '—';
+  document.getElementById('memo-compliance').textContent = m.compliance_note || '—';
+  document.getElementById('covering-note').textContent = (m.covering_note ? m.covering_note + ' ' : '') + "A webhook sends the memo and supporting data to the credit compliance supervisor's inbox and logs the decision to the audit sheet.";
+
+  document.getElementById('req-date').textContent = new Date().toLocaleDateString('en-SG', {day:'numeric', month:'short', year:'numeric'});
+}
+
+document.getElementById('btn-continue').addEventListener('click', () => show('screen-decision'));
+
+document.getElementById('btn-approve').addEventListener('click', () => {
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(()=> toast.classList.remove('show'), 3200);
+});
+</script>
+</body>
+</html>
