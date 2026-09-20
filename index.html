@@ -136,6 +136,92 @@
 
     <div class="content">
 
+      <!-- SCREEN: OVERVIEW -->
+      <div class="screen" id="screen-overview">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div>
+            <div class="h1">Overview</div>
+            <div class="sub">A snapshot of today's credit assessment activity across the SME &amp; Corporate desk</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
+            <div class="card" style="padding:20px;">
+              <div style="font-size:12px;color:var(--muted2);">Requests in queue</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;">9</div>
+            </div>
+            <div class="card" style="padding:20px;">
+              <div style="font-size:12px;color:var(--muted2);">Flagged priority</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;color:var(--amberdark);">1</div>
+            </div>
+            <div class="card" style="padding:20px;">
+              <div style="font-size:12px;color:var(--muted2);">Approved this week</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;color:var(--tealbtn);">3</div>
+            </div>
+            <div class="card" style="padding:20px;">
+              <div style="font-size:12px;color:var(--muted2);">Avg AI turnaround</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;">~12s</div>
+            </div>
+          </div>
+          <div class="card" style="padding:22px;flex-grow:1;overflow:auto;">
+            <div style="font-size:15px;font-weight:700;margin-bottom:16px;">Recent activity</div>
+            <div style="display:flex;flex-direction:column;gap:4px;" id="overview-activity-list">
+              <!-- rows injected/prepended by JS; static rows below are the fallback -->
+              <div class="overview-static-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);">
+                <div style="flex:1.4;font-weight:600;font-size:13px;">Tanjong Marine Supplies Pte Ltd</div>
+                <div style="flex:1;font-size:13px;color:var(--body);">S$310,000</div>
+                <div style="flex:1;font-size:13px;color:var(--muted2);">SME banking</div>
+                <div style="flex:1;"><span class="pill" style="background:#ecfdf5;color:var(--tealbtn);font-size:12px;">Approved</span></div>
+                <div style="flex:0.8;text-align:right;font-size:12px;color:var(--muted);">1h ago</div>
+              </div>
+              <div class="overview-static-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);">
+                <div style="flex:1.4;font-weight:600;font-size:13px;">Meridian Freight Holdings</div>
+                <div style="flex:1;font-size:13px;color:var(--body);">S$1,200,000</div>
+                <div style="flex:1;font-size:13px;color:var(--muted2);">Corporate</div>
+                <div style="flex:1;"><span class="pill" style="background:var(--amberbg);color:var(--amberdark);font-size:12px;">Escalated</span></div>
+                <div style="flex:0.8;text-align:right;font-size:12px;color:var(--muted);">3h ago</div>
+              </div>
+              <div class="overview-static-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);">
+                <div style="flex:1.4;font-weight:600;font-size:13px;">Kopi &amp; Co F&amp;B Group</div>
+                <div style="flex:1;font-size:13px;color:var(--body);">S$85,000</div>
+                <div style="flex:1;font-size:13px;color:var(--muted2);">Priority</div>
+                <div style="flex:1;"><span class="pill" style="background:#ecfdf5;color:var(--tealbtn);font-size:12px;">Approved</span></div>
+                <div style="flex:0.8;text-align:right;font-size:12px;color:var(--muted);">5h ago</div>
+              </div>
+              <div class="overview-static-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+                <div style="flex:1.4;font-weight:600;font-size:13px;">Straits Component Traders</div>
+                <div style="flex:1;font-size:13px;color:var(--body);">S$640,000</div>
+                <div style="flex:1;font-size:13px;color:var(--muted2);">SME banking</div>
+                <div style="flex:1;"><span class="pill" style="background:var(--track);color:var(--muted2);font-size:12px;">Pending</span></div>
+                <div style="flex:0.8;text-align:right;font-size:12px;color:var(--muted);">6h ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: REQUEST QUEUE -->
+      <div class="screen" id="screen-queue">
+        <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div class="h1">Request queue</div>
+              <div class="sub">9 open assessments awaiting AI-assisted review, oldest waiting 6h</div>
+            </div>
+            <div class="pill" style="background:#fee2e2;color:var(--red);">9 open</div>
+          </div>
+          <div class="card" style="padding:8px 22px;flex-grow:1;overflow:auto;">
+            <div style="display:flex;font-size:12px;color:var(--muted2);padding:12px 0;border-bottom:1px solid var(--line);font-weight:600;">
+              <div style="flex:0.9;">Reference</div>
+              <div style="flex:1.4;">Customer</div>
+              <div style="flex:1;">Amount</div>
+              <div style="flex:1;">Segment</div>
+              <div style="flex:1;">Status</div>
+              <div style="flex:0.8;text-align:right;">Waiting</div>
+            </div>
+            <div id="queue-rows"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- SCREEN 1: NEW REQUEST -->
       <div class="screen active" id="screen-main">
         <div style="display:flex;flex-direction:column;gap:20px;flex-grow:1;min-height:0;">
@@ -561,7 +647,9 @@ const NAV_FOR_SCREEN = {
   'screen-decision': 'nav-newreq',
   'screen-agent-retrieval': 'nav-retrieval',
   'screen-agent-compliance': 'nav-compliance',
-  'screen-agent-synthesis': 'nav-synthesis'
+  'screen-agent-synthesis': 'nav-synthesis',
+  'screen-overview': 'nav-overview',
+  'screen-queue': 'nav-queue'
 };
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -646,6 +734,59 @@ function renderAgentPages(){
   document.getElementById('synthesis-page-compliance').textContent = m.compliance_note || '—';
 }
 
+function renderOverviewAndQueue(){
+  // Overview: prepend the latest real run above the static example rows
+  const list = document.getElementById('overview-activity-list');
+  const old = document.getElementById('overview-latest-row');
+  if (old) old.remove();
+  if (lastResult && list) {
+    const nameEl = document.querySelector('.js-customer-name');
+    const amtEl = document.querySelector('.js-facility-amount');
+    const segEl = document.querySelector('.js-segment');
+    const band = (lastResult.compliance && lastResult.compliance.risk_band) || 'Scored';
+    const row = document.createElement('div');
+    row.id = 'overview-latest-row';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;background:#f0fdfa;margin-bottom:6px;';
+    row.innerHTML = `
+      <div style="flex:1.4;font-weight:600;font-size:13px;">${nameEl ? nameEl.textContent : 'Horizon Trade Partners Pte Ltd'}</div>
+      <div style="flex:1;font-size:13px;color:var(--body);">${amtEl ? amtEl.textContent : '—'}</div>
+      <div style="flex:1;font-size:13px;color:var(--muted2);">${segEl ? segEl.textContent : '—'}</div>
+      <div style="flex:1;"><span class="pill" style="background:var(--tealdark);color:var(--tealtext);font-size:12px;">${band}</span></div>
+      <div style="flex:0.8;text-align:right;font-size:12px;color:var(--tealbtn);font-weight:600;">Just now</div>
+    `;
+    list.prepend(row);
+  }
+
+  // Request queue: representative example rows (this prototype doesn't
+  // persist a real queue backend, so these are static, clearly-plausible
+  // records consistent with the "9 open, oldest waiting 6h" summary)
+  const queueEl = document.getElementById('queue-rows');
+  if (!queueEl) return;
+  const queueData = [
+    ['CR-20264-0083','Nanyang Precision Tools','S$275,000','SME banking','Pending compliance','1h'],
+    ['CR-20264-0084','Golden Harbour Logistics','S$3,400,000','Corporate','Awaiting RM','1h'],
+    ['CR-20264-0085','Ah Seng Wholesale Foods','S$92,000','Priority','Ready for synthesis','2h'],
+    ['CR-20264-0086','Bright Spark Electricals','S$410,000','SME banking','Pending compliance','2h'],
+    ['CR-20264-0087','Marina Bay Concierge Group','S$150,000','Priority','Flagged','3h'],
+    ['CR-20264-0088','Straits Component Traders','S$640,000','SME banking','Awaiting RM','4h'],
+    ['CR-20264-0089','Coastal Timber Exports','S$980,000','Corporate','Pending compliance','4h'],
+    ['CR-20264-0090','Little India Textiles Co','S$68,000','Priority','Ready for synthesis','5h'],
+    ['CR-20264-0092','Kembangan Auto Parts','S$525,000','SME banking','Flagged','6h']
+  ];
+  const statusColor = (s) => s==='Flagged' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'} : s==='Ready for synthesis' ? {bg:'#ecfdf5',fg:'var(--tealbtn)'} : {bg:'var(--track)',fg:'var(--muted2)'};
+  queueEl.innerHTML = queueData.map(([ref,name,amt,seg,status,wait]) => {
+    const c = statusColor(status);
+    return `<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;">
+      <div style="flex:0.9;color:var(--muted2);">${ref}</div>
+      <div style="flex:1.4;font-weight:600;">${name}</div>
+      <div style="flex:1;color:var(--body);">${amt}</div>
+      <div style="flex:1;color:var(--muted2);">${seg}</div>
+      <div style="flex:1;"><span class="pill" style="background:${c.bg};color:${c.fg};font-size:12px;">${status}</span></div>
+      <div style="flex:0.8;text-align:right;color:var(--muted);">${wait}</div>
+    </div>`;
+  }).join('');
+}
+
 function showToast(msg, duration){
   const toast = document.getElementById('toast');
   document.getElementById('toast-text').textContent = msg;
@@ -677,14 +818,8 @@ document.querySelectorAll('.seg-pill').forEach(p => {
 });
 
 // --- Sidebar nav: every item responds ---
-document.getElementById('nav-overview').addEventListener('click', function(){
-  flashNav(this);
-  showToast('Overview — 9 requests in queue, 1 flagged priority, 3 approved this week.');
-});
-document.getElementById('nav-queue').addEventListener('click', function(){
-  flashNav(this);
-  showToast('Request queue — 9 open assessments, oldest waiting 6h.');
-});
+document.getElementById('nav-overview').addEventListener('click', () => { renderOverviewAndQueue(); show('screen-overview'); });
+document.getElementById('nav-queue').addEventListener('click', () => { renderOverviewAndQueue(); show('screen-queue'); });
 document.getElementById('nav-workflow').addEventListener('click', function(){
   flashNav(this);
   showToast('Workflow logic — Retrieval → Compliance scoring → Synthesis, orchestrated in Make.com with Google Gemini 2.5.');
@@ -946,6 +1081,7 @@ document.getElementById('btn-approve').addEventListener('click', () => {
 
 // Initialize: example data on agent pages, correct sidebar highlight
 renderAgentPages();
+renderOverviewAndQueue();
 show('screen-main');
 </script>
 </body>
