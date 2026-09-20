@@ -576,11 +576,15 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   const qs = new URLSearchParams(REQUEST_PARAMS).toString();
   try {
     const res = await fetch(WEBHOOK_URL + '?' + qs);
-    const text = await res.text();
+    let text = await res.text();
+    // Defensive: Gemini occasionally wraps a field's JSON in a markdown code
+    // fence despite prompt instructions not to. Strip any stray fence markers
+    // anywhere in the response before parsing, so a fence never breaks the demo.
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     result = JSON.parse(text);
   } catch (e) {
     console.error(e);
-    result = null;
+    result = { __error: true };
   }
 });
 
@@ -649,9 +653,30 @@ function runProcessingAnimation(){
   const poll = setInterval(()=>{
     if (result !== null){
       clearInterval(poll);
-      finishProcessing();
+      if (result.__error){
+        handleRunError();
+      } else {
+        finishProcessing();
+      }
     }
   }, 150);
+
+  // Absolute safety net: never leave the screen hung indefinitely, even if
+  // the webhook never responds at all.
+  setTimeout(()=>{
+    if (result === null){
+      clearInterval(poll);
+      handleRunError();
+    }
+  }, 40000);
+}
+
+function handleRunError(){
+  clearInterval(elapsedTimer);
+  clearInterval(complianceBarInterval);
+  document.getElementById('btn-submit').disabled = false;
+  show('screen-main');
+  showToast('The assessment run hit an error — please try Submit again.', 4200);
 }
 
 function finishProcessing(){
