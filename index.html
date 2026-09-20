@@ -103,7 +103,7 @@
     <div class="navitem" id="nav-overview"><span class="navdot"></span>Overview</div>
     <div class="navitem" id="nav-queue" style="justify-content:space-between;">
       <span style="display:flex;align-items:center;gap:12px;"><span class="navdot"></span>Request queue</span>
-      <span style="background:#fee2e2;color:var(--red);font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;">9</span>
+      <span style="background:#fee2e2;color:var(--red);font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;" id="queue-badge-count">9</span>
     </div>
     <div class="navitem" id="nav-newreq">
       <span class="navdot"></span>New request
@@ -146,7 +146,7 @@
           <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
             <div class="card" style="padding:20px;">
               <div style="font-size:12px;color:var(--muted2);">Requests in queue</div>
-              <div style="font-size:28px;font-weight:800;margin-top:6px;">9</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;" id="kpi-queue-count">9</div>
             </div>
             <div class="card" style="padding:20px;">
               <div style="font-size:12px;color:var(--muted2);">Flagged priority</div>
@@ -154,7 +154,7 @@
             </div>
             <div class="card" style="padding:20px;">
               <div style="font-size:12px;color:var(--muted2);">Approved this week</div>
-              <div style="font-size:28px;font-weight:800;margin-top:6px;color:var(--tealbtn);">3</div>
+              <div style="font-size:28px;font-weight:800;margin-top:6px;color:var(--tealbtn);" id="kpi-approved-count">3</div>
             </div>
             <div class="card" style="padding:20px;">
               <div style="font-size:12px;color:var(--muted2);">Avg AI turnaround</div>
@@ -204,9 +204,9 @@
           <div style="display:flex;align-items:flex-start;justify-content:space-between;">
             <div>
               <div class="h1">Request queue</div>
-              <div class="sub">9 open assessments awaiting AI-assisted review, oldest waiting 6h</div>
+              <div class="sub" id="queue-open-sub">9 open assessments awaiting AI-assisted review, oldest waiting 6h</div>
             </div>
-            <div class="pill" style="background:#fee2e2;color:var(--red);">9 open</div>
+            <div class="pill" style="background:#fee2e2;color:var(--red);" id="queue-open-pill">9 open</div>
           </div>
           <div class="card" style="padding:8px 22px;flex-grow:1;overflow:auto;">
             <div style="display:flex;font-size:12px;color:var(--muted2);padding:12px 0;border-bottom:1px solid var(--line);font-weight:600;">
@@ -282,10 +282,10 @@
               <div class="card" style="padding:20px;">
                 <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Customer snapshot</div>
                 <div style="display:flex;flex-direction:column;gap:11px;font-size:13px;">
-                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Relationship since</span><span style="font-weight:600;">2019</span></div>
-                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Existing facilities</span><span style="font-weight:600;">S$180,000</span></div>
-                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Repayment history</span><span class="pill" style="background:#ecfdf5;color:var(--tealbtn);padding:2px 9px;font-size:12px;">On time</span></div>
-                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Open queries</span><span style="font-weight:600;">None</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Relationship since</span><span style="font-weight:600;" id="snapshot-relationship">2019</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Existing facilities</span><span style="font-weight:600;" id="snapshot-existing-facilities">S$180,000</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Repayment history</span><span class="pill" id="snapshot-repayment" style="background:#ecfdf5;color:var(--tealbtn);padding:2px 9px;font-size:12px;">On time</span></div>
+                  <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Open queries</span><span style="font-weight:600;" id="snapshot-open-queries">None</span></div>
                 </div>
               </div>
               <div class="card" style="padding:20px;">
@@ -686,6 +686,22 @@ let runHistory = [];
 // leaving it frozen on its pre-submission placeholder status forever.
 const queueDecisions = {};
 
+// The risk-band pills (Compliance rating screen and Compliance agent tab)
+// used to keep a fixed color regardless of which band the AI actually
+// returned — the Compliance rating pill was always teal (a "low risk"
+// color) and the agent-tab pill was always amber, so a genuine High-risk
+// result like Nautica's still displayed in "safe"-looking or mismatched
+// colors. This maps each of the rubric's 4 bands to its own color.
+function bandColorStyle(band){
+  switch (band) {
+    case 'Low-medium risk': return { bg: 'var(--tealdark)', fg: 'var(--tealtext)' };
+    case 'Medium risk': return { bg: 'var(--amberbg)', fg: 'var(--amberdark)' };
+    case 'Medium-high risk': return { bg: 'var(--amberbg)', fg: 'var(--amberdark)' };
+    case 'High risk': return { bg: '#fee2e2', fg: 'var(--red)' };
+    default: return { bg: 'var(--track)', fg: 'var(--muted2)' };
+  }
+}
+
 function renderAgentPages(){
   const hasRun = lastResult !== null;
   const statusStyle = (el) => {
@@ -721,7 +737,11 @@ function renderAgentPages(){
     ]
   };
   document.getElementById('compliance-page-rating').textContent = c.rating ?? '—';
-  document.getElementById('compliance-page-band').textContent = c.risk_band || '—';
+  const pageBandEl = document.getElementById('compliance-page-band');
+  pageBandEl.textContent = c.risk_band || '—';
+  const pageBandStyle = bandColorStyle(c.risk_band);
+  pageBandEl.style.background = pageBandStyle.bg;
+  pageBandEl.style.color = pageBandStyle.fg;
   const sigWrap = document.getElementById('compliance-page-signals');
   sigWrap.innerHTML = '';
   (c.signals || []).forEach(sig => {
@@ -803,6 +823,26 @@ function renderOverviewAndQueue(){
     ['CR-20264-0090','Little India Textiles Co','S$68,000','Priority','Ready for synthesis','5h'],
     ['CR-20264-0092','Kembangan Auto Parts','S$525,000','SME banking','Flagged','6h']
   ];
+
+  // A decided request (Approved or Escalated) is no longer "awaiting
+  // AI-assisted review" — it's been reviewed and sent onward — so it
+  // shouldn't still count toward the "open" total. Only Horizon/Nautica
+  // can ever carry a decision in this prototype, so this only ever
+  // subtracts 0, 1 or 2 from the full static list of 9.
+  const decidedCount = Object.keys(queueDecisions).length;
+  const openCount = queueData.length - decidedCount;
+  const approvedThisSession = Object.values(queueDecisions).filter(d => d.status === 'Approved').length;
+  const queueBadge = document.getElementById('queue-badge-count');
+  const kpiQueue = document.getElementById('kpi-queue-count');
+  const kpiApproved = document.getElementById('kpi-approved-count');
+  const queueSub = document.getElementById('queue-open-sub');
+  const queuePill = document.getElementById('queue-open-pill');
+  if (queueBadge) queueBadge.textContent = openCount;
+  if (kpiQueue) kpiQueue.textContent = openCount;
+  if (kpiApproved) kpiApproved.textContent = 3 + approvedThisSession; // 3 = approvals earlier in the week, before this session
+  if (queueSub) queueSub.textContent = openCount + ' open assessments awaiting AI-assisted review, oldest waiting 6h';
+  if (queuePill) queuePill.textContent = openCount + ' open';
+
   const statusColor = (s) => s==='Flagged' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'}
     : (s==='Ready for synthesis' || s==='Approved') ? {bg:'#ecfdf5',fg:'var(--tealbtn)'}
     : s==='Escalated' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'}
@@ -892,6 +932,39 @@ const RETRIEVAL_DATA = {
   'CU-8891-27744': { relationship: '2023', exposure: 'S$1,200,000', repayment: '2 late payments (12mo)', repaymentPositive: false, openQueries: '1 open dispute', priorTx: 7 }
 };
 
+// Keeps the New Request screen's "Customer snapshot" card in sync with
+// whichever Customer ID is actually in the form — it used to be static
+// HTML frozen on Horizon's numbers, so loading Nautica (or typing any
+// other ID) left it showing Horizon's S$180,000 / 2019 / On time regardless.
+function updateCustomerSnapshot(){
+  const custId = document.getElementById('in-customer-id').value.trim();
+  const rd = RETRIEVAL_DATA[custId];
+  const relEl = document.getElementById('snapshot-relationship');
+  const facEl = document.getElementById('snapshot-existing-facilities');
+  const repEl = document.getElementById('snapshot-repayment');
+  const openEl = document.getElementById('snapshot-open-queries');
+  if (!relEl || !facEl || !repEl || !openEl) return;
+  if (rd) {
+    relEl.textContent = rd.relationship;
+    facEl.textContent = rd.exposure;
+    repEl.textContent = rd.repayment;
+    repEl.style.background = rd.repaymentPositive ? '#ecfdf5' : 'var(--amberbg)';
+    repEl.style.color = rd.repaymentPositive ? 'var(--tealbtn)' : 'var(--amberdark)';
+    openEl.textContent = rd.openQueries;
+  } else {
+    // An ID with no seeded Data store record — a genuinely new customer
+    // would have nothing on file yet, so say that instead of leaving
+    // stale numbers on screen.
+    relEl.textContent = '—';
+    facEl.textContent = '—';
+    repEl.textContent = 'No record';
+    repEl.style.background = 'var(--track)';
+    repEl.style.color = 'var(--muted2)';
+    openEl.textContent = '—';
+  }
+}
+document.getElementById('in-customer-id').addEventListener('input', updateCustomerSnapshot);
+
 function loadDemoCustomer(key){
   const d = DEMO_CUSTOMERS[key];
   if (!d) return;
@@ -906,6 +979,7 @@ function loadDemoCustomer(key){
     o.style.color = active ? '#fff' : 'var(--muted2)';
     o.classList.toggle('active', active);
   });
+  updateCustomerSnapshot();
   syncPreview();
   show('screen-main');
   showToast('Loaded ' + d.name + ' — review and submit when ready.');
@@ -1060,8 +1134,11 @@ function runProcessingAnimation(){
     document.getElementById('time-retrieval').textContent = '1.1s';
     document.getElementById('agents-done').textContent = '1';
     document.getElementById('overall-bar').style.width = '33%';
-    addLog('1.1s', 'Retrieval: customer record CU-4471-90233 located');
-    addLog('2.0s', 'Retrieval: 14 prior transactions matched');
+    // Pulled from the live request, not hardcoded — this used to always
+    // print Horizon's ID and "14" even while actually processing Nautica.
+    const rd = RETRIEVAL_DATA[REQUEST_PARAMS.customer_id];
+    addLog('1.1s', 'Retrieval: customer record ' + REQUEST_PARAMS.customer_id + ' located');
+    addLog('2.0s', 'Retrieval: ' + (rd ? rd.priorTx : 'no prior') + ' prior transactions matched');
   }, 900);
 
   setTimeout(()=>{
@@ -1074,7 +1151,11 @@ function runProcessingAnimation(){
       p = Math.min(p + 3, 97);
       document.getElementById('bar-compliance').style.width = p+'%';
     }, 300);
-    addLog('3.2s', 'Compliance: flagged industry concentration, F&amp;B distribution sector', true);
+    // Generic on purpose: the real Gemini call hasn't returned yet at this
+    // point, so this can't name a specific industry finding without risking
+    // it being wrong (it used to always say "F&B distribution sector",
+    // even while scoring Nautica's shipping exposure).
+    addLog('3.2s', 'Compliance: checking industry concentration exposure');
   }, 1500);
 
   // Real processing keeps running in the background (two live Gemini calls) —
@@ -1163,7 +1244,11 @@ function populateResults(data){
 
   document.getElementById('rating-num').textContent = c.rating ?? '—';
   document.getElementById('decision-rating').textContent = c.rating ?? '—';
-  document.getElementById('risk-band-pill').textContent = c.risk_band || '—';
+  const riskBandEl = document.getElementById('risk-band-pill');
+  riskBandEl.textContent = c.risk_band || '—';
+  const riskBandStyle = bandColorStyle(c.risk_band);
+  riskBandEl.style.background = riskBandStyle.bg;
+  riskBandEl.style.color = riskBandStyle.fg;
   document.getElementById('confidence-pct').textContent = (c.confidence_pct ?? '—') + '%';
   document.getElementById('confidence-bar').style.width = (c.confidence_pct ?? 0) + '%';
 
@@ -1242,6 +1327,7 @@ document.getElementById('btn-approve').addEventListener('click', () => {
 // Initialize: example data on agent pages, correct sidebar highlight
 renderAgentPages();
 renderOverviewAndQueue();
+updateCustomerSnapshot();
 show('screen-main');
 </script>
 </body>
