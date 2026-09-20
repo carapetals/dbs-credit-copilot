@@ -435,10 +435,7 @@
               <div class="card" style="padding:20px;">
                 <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Recommendation</div>
                 <div style="font-size:13px;color:#475569;line-height:1.55;" id="compliance-recommendation">Proceed to memo synthesis under standard terms. Flag industry concentration for the RM's covering note.</div>
-                <div style="display:flex;gap:8px;margin-top:12px;">
-                  <span class="pill" style="background:#ecfdf5;color:var(--tealbtn);">Repayment strong</span>
-                  <span class="pill" style="background:var(--amberbg);color:var(--amberdark);">Industry flag</span>
-                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;" id="recommendation-tags"></div>
               </div>
             </div>
           </div>
@@ -1072,6 +1069,29 @@ function populateResults(data){
   });
 
   document.getElementById('compliance-recommendation').textContent = c.recommendation || '';
+
+  // Build recommendation tags from the actual signals, instead of a fixed
+  // label — so a bad repayment history never shows a "strong" badge.
+  const tagsEl = document.getElementById('recommendation-tags');
+  if (tagsEl) {
+    tagsEl.innerHTML = '';
+    const tagFor = (sig) => {
+      const label = (sig.label || '').toLowerCase();
+      const positive = sig.points < 0; // negative points = risk-reducing = good
+      if (label.includes('repay')) return { text: positive ? 'Repayment strong' : 'Repayment risk', positive };
+      if (label.includes('exposure')) return { text: positive ? 'Exposure low' : 'Exposure high', positive };
+      if (label.includes('industry')) return { text: positive ? 'Industry clear' : 'Industry flag', positive };
+      if (label.includes('bureau')) return { text: positive ? 'Bureau good' : 'Bureau poor', positive };
+      return null;
+    };
+    (c.signals || []).map(tagFor).filter(Boolean).slice(0, 3).forEach(tag => {
+      const span = document.createElement('span');
+      span.className = 'pill';
+      span.style.cssText = tag.positive ? 'background:#ecfdf5;color:var(--tealbtn);' : 'background:var(--amberbg);color:var(--amberdark);';
+      span.textContent = tag.text;
+      tagsEl.appendChild(span);
+    });
+  }
 
   document.getElementById('memo-recommendation').textContent = m.recommendation || '—';
   document.getElementById('memo-basis').textContent = m.basis || '—';
