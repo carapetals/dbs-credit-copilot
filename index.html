@@ -906,6 +906,7 @@ const DEMO_CUSTOMERS = {
   horizon: {
     name: 'Horizon Trade Partners Pte Ltd',
     id: 'CU-4471-90233',
+    reference: 'CR-20264-0079',
     amount: 'SGD 450,000.00',
     tenure: '36 months',
     segment: 'SME banking',
@@ -914,12 +915,23 @@ const DEMO_CUSTOMERS = {
   nautica: {
     name: 'Nautica Offshore Marine Pte Ltd',
     id: 'CU-8891-27744',
+    reference: 'CR-20264-0080',
     amount: 'SGD 600,000.00',
     tenure: '24 months',
     segment: 'SME banking',
     purpose: 'Bridge financing for offshore vessel maintenance ahead of Q1 charter renewals, given delayed payments from an anchor shipping client.'
   }
 };
+
+// Tracks which case reference number belongs to whatever is currently loaded
+// in the New Request form. The Decision screen's "Reference" field used to
+// be frozen at "CR-20264-0091" for every run, even though the Request queue
+// lists Horizon and Nautica under their own distinct references
+// (CR-20264-0079 / CR-20264-0080) — so a submitted Nautica case would show
+// up on the Decision screen citing Horizon's queue reference. Defaults to
+// the original placeholder for a manually-typed request that didn't come
+// from a queue row.
+let currentReference = 'CR-20264-0091';
 
 // Retrieval-stage facts for the two seeded Data store records. The webhook's
 // JSON response only echoes compliance signals and the memo, not these raw
@@ -968,6 +980,7 @@ document.getElementById('in-customer-id').addEventListener('input', updateCustom
 function loadDemoCustomer(key){
   const d = DEMO_CUSTOMERS[key];
   if (!d) return;
+  currentReference = d.reference;
   document.getElementById('in-customer-name').value = d.name;
   document.getElementById('in-customer-id').value = d.id;
   document.getElementById('in-facility-amount').value = d.amount;
@@ -1007,6 +1020,7 @@ document.getElementById('btn-cancel').addEventListener('click', () => {
   clearInterval(elapsedTimer);
   clearInterval(complianceBarInterval);
   result = null; startTime = null; lastDecisionStatus = null;
+  currentReference = 'CR-20264-0091';
   document.getElementById('btn-submit').disabled = false;
   show('screen-main');
   showToast('Run cancelled — no changes were saved.');
@@ -1082,6 +1096,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   REQUEST_PARAMS.rm_name = REQUEST_PARAMS.rm_name || 'Alex Tan';
 
   const amountLabel = 'S$' + amountNum.toLocaleString('en-SG', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.querySelectorAll('.js-reference').forEach(el => el.textContent = currentReference);
   document.querySelectorAll('.js-customer-name').forEach(el => el.textContent = custName);
   document.querySelectorAll('.js-facility-amount').forEach(el => el.textContent = amountLabel);
   document.querySelectorAll('.js-segment').forEach(el => el.textContent = segment);
