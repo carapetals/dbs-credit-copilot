@@ -239,14 +239,6 @@
                 <div class="pill" style="background:var(--track);color:var(--muted2);">Step 1 of 2</div>
               </div>
 
-              <div>
-                <div class="field-label" style="margin-bottom:8px;">Quick-load demo customer</div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                  <div class="pill demo-load-pill" data-demo="horizon" style="cursor:pointer;background:#ecfdf5;color:var(--tealbtn);border:1px solid #a7f3d0;">Horizon Trade Partners (good profile)</div>
-                  <div class="pill demo-load-pill" data-demo="nautica" style="cursor:pointer;background:var(--amberbg);color:var(--amberdark);border:1px solid #fde68a;">Nautica Offshore Marine (high-risk profile)</div>
-                </div>
-              </div>
-
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
                 <div><div class="field-label">Customer name</div><input class="field-box" id="in-customer-name" type="text" value="Horizon Trade Partners Pte Ltd"></div>
                 <div><div class="field-label">Customer ID</div><input class="field-box" id="in-customer-id" type="text" value="CU-4471-90233"></div>
@@ -537,11 +529,11 @@
               </div>
               <div style="font-size:13px;color:var(--muted2);">Customer ID<div style="font-size:16px;font-weight:700;color:var(--ink);margin-top:2px;" id="retrieval-customer-id">CU-4471-90233</div></div>
               <div style="display:flex;flex-direction:column;gap:11px;font-size:13px;">
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Relationship since</span><span style="font-weight:600;">2019</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Existing facilities</span><span style="font-weight:600;">S$180,000</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Repayment history</span><span class="pill" style="background:#ecfdf5;color:var(--tealbtn);padding:2px 9px;font-size:12px;">On time</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Open queries</span><span style="font-weight:600;">None</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Prior transactions matched</span><span style="font-weight:600;">14</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Relationship since</span><span style="font-weight:600;" id="retrieval-relationship-since">2019</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Existing facilities</span><span style="font-weight:600;" id="retrieval-existing-facilities">S$180,000</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Repayment history</span><span class="pill" id="retrieval-repayment-pill" style="background:#ecfdf5;color:var(--tealbtn);padding:2px 9px;font-size:12px;">On time</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Open queries</span><span style="font-weight:600;" id="retrieval-open-queries">None</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Prior transactions matched</span><span style="font-weight:600;" id="retrieval-prior-transactions">14</span></div>
               </div>
             </div>
           </div>
@@ -696,6 +688,15 @@ function renderAgentPages(){
   statusStyle(document.getElementById('retrieval-status-pill'));
   document.getElementById('retrieval-example-badge').style.display = hasRun ? 'none' : 'inline-flex';
   document.getElementById('retrieval-customer-id').textContent = REQUEST_PARAMS.customer_id;
+  const rd = (hasRun && RETRIEVAL_DATA[REQUEST_PARAMS.customer_id]) || RETRIEVAL_DATA['CU-4471-90233'];
+  document.getElementById('retrieval-relationship-since').textContent = rd.relationship;
+  document.getElementById('retrieval-existing-facilities').textContent = rd.exposure;
+  document.getElementById('retrieval-open-queries').textContent = rd.openQueries;
+  document.getElementById('retrieval-prior-transactions').textContent = rd.priorTx;
+  const repayPill = document.getElementById('retrieval-repayment-pill');
+  repayPill.textContent = rd.repayment;
+  repayPill.style.background = rd.repaymentPositive ? '#ecfdf5' : 'var(--amberbg)';
+  repayPill.style.color = rd.repaymentPositive ? 'var(--tealbtn)' : 'var(--amberdark)';
 
   // Compliance page
   statusStyle(document.getElementById('compliance-status-pill'));
@@ -779,8 +780,8 @@ function renderOverviewAndQueue(){
   const queueEl = document.getElementById('queue-rows');
   if (!queueEl) return;
   const queueData = [
-    ['CR-20264-0083','Nanyang Precision Tools','S$275,000','SME banking','Pending compliance','1h'],
-    ['CR-20264-0084','Golden Harbour Logistics','S$3,400,000','Corporate','Awaiting RM','1h'],
+    ['CR-20264-0079','Horizon Trade Partners','S$450,000','SME banking','Pending compliance','12m','horizon'],
+    ['CR-20264-0080','Nautica Offshore Marine','S$600,000','SME banking','Awaiting RM','38m','nautica'],
     ['CR-20264-0085','Ah Seng Wholesale Foods','S$92,000','Priority','Ready for synthesis','2h'],
     ['CR-20264-0086','Bright Spark Electricals','S$410,000','SME banking','Pending compliance','2h'],
     ['CR-20264-0087','Marina Bay Concierge Group','S$150,000','Priority','Flagged','3h'],
@@ -790,17 +791,24 @@ function renderOverviewAndQueue(){
     ['CR-20264-0092','Kembangan Auto Parts','S$525,000','SME banking','Flagged','6h']
   ];
   const statusColor = (s) => s==='Flagged' ? {bg:'var(--amberbg)',fg:'var(--amberdark)'} : s==='Ready for synthesis' ? {bg:'#ecfdf5',fg:'var(--tealbtn)'} : {bg:'var(--track)',fg:'var(--muted2)'};
-  queueEl.innerHTML = queueData.map(([ref,name,amt,seg,status,wait]) => {
+  queueEl.innerHTML = queueData.map(([ref,name,amt,seg,status,wait,demoKey]) => {
     const c = statusColor(status);
-    return `<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;">
+    const isDemo = !!demoKey;
+    const rowAttrs = isDemo
+      ? `class="queue-demo-row" data-demo="${demoKey}" title="Click to open this request pre-filled" style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;background:#f8fafc;"`
+      : `style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;"`;
+    return `<div ${rowAttrs}>
       <div style="flex:0.9;color:var(--muted2);">${ref}</div>
-      <div style="flex:1.4;font-weight:600;">${name}</div>
+      <div style="flex:1.4;font-weight:600;">${name}${isDemo ? ' <span style="color:var(--tealbtn);">&rsaquo;</span>' : ''}</div>
       <div style="flex:1;color:var(--body);">${amt}</div>
       <div style="flex:1;color:var(--muted2);">${seg}</div>
       <div style="flex:1;"><span class="pill" style="background:${c.bg};color:${c.fg};font-size:12px;">${status}</span></div>
       <div style="flex:0.8;text-align:right;color:var(--muted);">${wait}</div>
     </div>`;
   }).join('');
+  queueEl.querySelectorAll('.queue-demo-row').forEach(row => {
+    row.addEventListener('click', () => loadDemoCustomer(row.dataset.demo));
+  });
 }
 
 function showToast(msg, duration){
@@ -833,8 +841,8 @@ document.querySelectorAll('.seg-pill').forEach(p => {
   });
 });
 
-// --- Quick-load demo customers: one click fills the whole form, so nothing
-// has to be typed or remembered live on stage. ---
+// --- Demo customers: clicking their row in the Request queue fills the New
+// Request form, so nothing has to be typed or remembered live on stage. ---
 const DEMO_CUSTOMERS = {
   horizon: {
     name: 'Horizon Trade Partners Pte Ltd',
@@ -853,25 +861,36 @@ const DEMO_CUSTOMERS = {
     purpose: 'Bridge financing for offshore vessel maintenance ahead of Q1 charter renewals, given delayed payments from an anchor shipping client.'
   }
 };
-document.querySelectorAll('.demo-load-pill').forEach(p => {
-  p.addEventListener('click', () => {
-    const d = DEMO_CUSTOMERS[p.dataset.demo];
-    if (!d) return;
-    document.getElementById('in-customer-name').value = d.name;
-    document.getElementById('in-customer-id').value = d.id;
-    document.getElementById('in-facility-amount').value = d.amount;
-    document.getElementById('in-tenure').value = d.tenure;
-    document.getElementById('in-purpose').value = d.purpose;
-    document.querySelectorAll('.seg-pill').forEach(o => {
-      const active = o.dataset.segment === d.segment;
-      o.style.background = active ? 'var(--navy)' : 'var(--track)';
-      o.style.color = active ? '#fff' : 'var(--muted2)';
-      o.classList.toggle('active', active);
-    });
-    syncPreview();
-    showToast('Loaded ' + d.name + ' — review and submit when ready.');
+
+// Retrieval-stage facts for the two seeded Data store records. The webhook's
+// JSON response only echoes compliance signals and the memo, not these raw
+// retrieval fields, so they're kept here client-side, keyed by Customer ID.
+// "Open queries" and "Prior transactions matched" have no live backing data
+// in the Data store either way — they're illustrative, same as the flat 28
+// baseline in the compliance score.
+const RETRIEVAL_DATA = {
+  'CU-4471-90233': { relationship: '2019', exposure: 'S$180,000', repayment: 'On time', repaymentPositive: true, openQueries: 'None', priorTx: 14 },
+  'CU-8891-27744': { relationship: '2023', exposure: 'S$1,200,000', repayment: '2 late payments (12mo)', repaymentPositive: false, openQueries: '1 open dispute', priorTx: 7 }
+};
+
+function loadDemoCustomer(key){
+  const d = DEMO_CUSTOMERS[key];
+  if (!d) return;
+  document.getElementById('in-customer-name').value = d.name;
+  document.getElementById('in-customer-id').value = d.id;
+  document.getElementById('in-facility-amount').value = d.amount;
+  document.getElementById('in-tenure').value = d.tenure;
+  document.getElementById('in-purpose').value = d.purpose;
+  document.querySelectorAll('.seg-pill').forEach(o => {
+    const active = o.dataset.segment === d.segment;
+    o.style.background = active ? 'var(--navy)' : 'var(--track)';
+    o.style.color = active ? '#fff' : 'var(--muted2)';
+    o.classList.toggle('active', active);
   });
-});
+  syncPreview();
+  show('screen-main');
+  showToast('Loaded ' + d.name + ' — review and submit when ready.');
+}
 
 // --- Sidebar nav: every item responds ---
 document.getElementById('nav-overview').addEventListener('click', () => { renderOverviewAndQueue(); show('screen-overview'); });
