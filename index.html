@@ -230,7 +230,6 @@
               <div class="h1">New credit assessment request</div>
               <div class="sub">Enter facility details to route this request through AI-assisted compliance scoring</div>
             </div>
-            <div class="pill" style="background:var(--track);color:var(--muted2);border:1px solid var(--line);"><span style="width:7px;height:7px;border-radius:999px;background:var(--muted2);margin-right:8px;display:inline-block;"></span>Draft &middot; not yet submitted</div>
           </div>
 
           <div style="display:flex;gap:24px;flex-grow:1;min-height:0;">
@@ -678,6 +677,7 @@ let elapsedTimer = null;
 let complianceBarInterval = null;
 let lastResult = null;
 let lastRunAt = null;
+let lastDecisionStatus = null;
 
 function renderAgentPages(){
   const hasRun = lastResult !== null;
@@ -744,6 +744,12 @@ function renderOverviewAndQueue(){
     const amtEl = document.querySelector('.js-facility-amount');
     const segEl = document.querySelector('.js-segment');
     const band = (lastResult.compliance && lastResult.compliance.risk_band) || 'Scored';
+    const statusLabel = lastDecisionStatus || band;
+    const statusStyle = lastDecisionStatus === 'Approved'
+      ? 'background:#ecfdf5;color:var(--tealbtn);'
+      : lastDecisionStatus === 'Escalated'
+      ? 'background:var(--amberbg);color:var(--amberdark);'
+      : 'background:var(--tealdark);color:var(--tealtext);';
     const row = document.createElement('div');
     row.id = 'overview-latest-row';
     row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-radius:8px;background:#f0fdfa;margin-bottom:6px;';
@@ -751,7 +757,7 @@ function renderOverviewAndQueue(){
       <div style="flex:1.4;font-weight:600;font-size:13px;">${nameEl ? nameEl.textContent : 'Horizon Trade Partners Pte Ltd'}</div>
       <div style="flex:1;font-size:13px;color:var(--body);">${amtEl ? amtEl.textContent : '—'}</div>
       <div style="flex:1;font-size:13px;color:var(--muted2);">${segEl ? segEl.textContent : '—'}</div>
-      <div style="flex:1;"><span class="pill" style="background:var(--tealdark);color:var(--tealtext);font-size:12px;">${band}</span></div>
+      <div style="flex:1;"><span class="pill" style="${statusStyle}font-size:12px;">${statusLabel}</span></div>
       <div style="flex:0.8;text-align:right;font-size:12px;color:var(--tealbtn);font-weight:600;">Just now</div>
     `;
     list.prepend(row);
@@ -838,7 +844,7 @@ document.getElementById('btn-save').addEventListener('click', () => {
 document.getElementById('btn-cancel').addEventListener('click', () => {
   clearInterval(elapsedTimer);
   clearInterval(complianceBarInterval);
-  result = null; startTime = null;
+  result = null; startTime = null; lastDecisionStatus = null;
   document.getElementById('btn-submit').disabled = false;
   show('screen-main');
   showToast('Run cancelled — no changes were saved.');
@@ -853,7 +859,9 @@ document.getElementById('btn-return').addEventListener('click', () => {
   showToast('Sent back for edits — form re-opened.');
 });
 document.getElementById('btn-escalate').addEventListener('click', () => {
+  lastDecisionStatus = 'Escalated';
   showToast('Escalated to credit committee — awaiting senior review.');
+  setTimeout(() => { renderOverviewAndQueue(); show('screen-overview'); }, 1100);
 });
 
 document.getElementById('btn-submit').addEventListener('click', async () => {
@@ -862,6 +870,8 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   // previous run's leftover result before the new fetch has responded.
   result = null;
   startTime = null;
+
+  lastDecisionStatus = null;
 
   // Pull live values from the editable fields into the request
   const custName = document.getElementById('in-customer-name').value.trim() || 'Horizon Trade Partners Pte Ltd';
@@ -1074,9 +1084,9 @@ function populateResults(data){
 document.getElementById('btn-continue').addEventListener('click', () => show('screen-decision'));
 
 document.getElementById('btn-approve').addEventListener('click', () => {
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(()=> toast.classList.remove('show'), 3200);
+  lastDecisionStatus = 'Approved';
+  showToast('Approved — memo sent to compliance and logged to the audit sheet.');
+  setTimeout(() => { renderOverviewAndQueue(); show('screen-overview'); }, 1100);
 });
 
 // Initialize: example data on agent pages, correct sidebar highlight
