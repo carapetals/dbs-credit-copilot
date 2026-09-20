@@ -50,8 +50,17 @@
   .sub{font-size:14px;color:var(--muted2);margin-top:4px;}
 
   .field-label{font-size:12px;color:var(--muted2);margin-bottom:6px;}
-  .field-box{height:44px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;padding:0 14px;font-size:14px;font-weight:600;}
-  .field-area{border-radius:10px;background:var(--card);border:1px solid var(--line);padding:12px 14px;font-size:14px;color:var(--body);line-height:1.5;}
+  .field-box{height:44px;width:100%;border-radius:10px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;padding:0 14px;font-size:14px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s;}
+  .field-area{border-radius:10px;background:var(--card);border:1px solid var(--line);padding:12px 14px;font-size:14px;color:var(--body);line-height:1.5;outline:none;transition:border-color .15s,box-shadow .15s;}
+  .field-box:focus, .field-area:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(45,212,191,.15);}
+  .search{width:380px;height:38px;border-radius:10px;background:var(--track);padding:0 14px;color:var(--ink);font-size:14px;border:1px solid transparent;outline:none;transition:border-color .15s,box-shadow .15s,background .15s;}
+  .search::placeholder{color:var(--muted);}
+  .search:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px rgba(45,212,191,.12);}
+  .seg-pill{cursor:pointer;user-select:none;transition:background .15s,color .15s;}
+  .navitem{cursor:pointer;transition:background .15s;}
+  .navitem:not(#nav-newreq):hover{background:var(--track);}
+  .navitem.navitem-flash{background:var(--navy)!important;color:#fff!important;}
+  .agent-row-highlight{outline:2px solid var(--teal);outline-offset:-1px;}
 
   /* screens visibility */
   .screen{display:none;flex-grow:1;min-height:0;}
@@ -87,8 +96,8 @@
     </div>
 
     <div class="navlabel">MAIN</div>
-    <div class="navitem"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Overview</div>
-    <div class="navitem" style="justify-content:space-between;">
+    <div class="navitem" id="nav-overview"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Overview</div>
+    <div class="navitem" id="nav-queue" style="justify-content:space-between;">
       <span style="display:flex;align-items:center;gap:12px;"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Request queue</span>
       <span style="background:#fee2e2;color:var(--red);font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;">9</span>
     </div>
@@ -100,7 +109,7 @@
     <div class="navitem" id="nav-retrieval"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Retrieval agent</div>
     <div class="navitem" id="nav-compliance"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Compliance agent</div>
     <div class="navitem" id="nav-synthesis"><span style="width:8px;height:8px;border-radius:2px;background:#cbd5e1;"></span>Synthesis agent</div>
-    <div class="navitem"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Workflow logic</div>
+    <div class="navitem" id="nav-workflow"><span style="width:8px;height:8px;border-radius:2px;border:1.5px solid #cbd5e1;"></span>Workflow logic</div>
 
     <div style="flex-grow:1;"></div>
 
@@ -114,7 +123,7 @@
   <!-- MAIN COLUMN -->
   <div class="main">
     <div class="topbar">
-      <div class="search">Search customer or reference</div>
+      <input class="search" type="text" placeholder="Search customer or reference">
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="avatar">AT</div>
         <div><div class="whoami">Alex Tan</div><div class="whorole">Relationship manager</div></div>
@@ -142,30 +151,30 @@
               </div>
 
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
-                <div><div class="field-label">Customer name</div><div class="field-box">Horizon Trade Partners Pte Ltd</div></div>
-                <div><div class="field-label">Customer ID</div><div class="field-box">CU-4471-90233</div></div>
-                <div><div class="field-label">Facility amount requested</div><div class="field-box">SGD 450,000.00</div></div>
-                <div><div class="field-label">Tenure</div><div class="field-box">36 months</div></div>
+                <div><div class="field-label">Customer name</div><input class="field-box" id="in-customer-name" type="text" value="Horizon Trade Partners Pte Ltd"></div>
+                <div><div class="field-label">Customer ID</div><input class="field-box" id="in-customer-id" type="text" value="CU-4471-90233"></div>
+                <div><div class="field-label">Facility amount requested</div><input class="field-box" id="in-facility-amount" type="text" value="SGD 450,000.00"></div>
+                <div><div class="field-label">Tenure</div><input class="field-box" id="in-tenure" type="text" value="36 months"></div>
               </div>
 
               <div>
                 <div class="field-label" style="margin-bottom:8px;">Segment</div>
-                <div style="display:flex;gap:10px;">
-                  <div class="pill" style="background:var(--navy);color:#fff;">SME banking</div>
-                  <div class="pill" style="background:var(--track);color:var(--muted2);">Corporate</div>
-                  <div class="pill" style="background:var(--track);color:var(--muted2);">Priority</div>
+                <div style="display:flex;gap:10px;" id="segment-group">
+                  <div class="pill seg-pill active" data-segment="SME banking" style="background:var(--navy);color:#fff;">SME banking</div>
+                  <div class="pill seg-pill" data-segment="Corporate" style="background:var(--track);color:var(--muted2);">Corporate</div>
+                  <div class="pill seg-pill" data-segment="Priority" style="background:var(--track);color:var(--muted2);">Priority</div>
                 </div>
               </div>
 
               <div style="flex-grow:1;">
                 <div class="field-label">Purpose of facility</div>
-                <div class="field-area" style="height:96px;">Working capital line to finance imported F&amp;B stock (beverage and packaged snacks) ahead of Q4 distribution contracts. Customer has requested expedited review given supplier payment terms.</div>
+                <textarea class="field-area" id="in-purpose" style="height:96px;width:100%;resize:vertical;">Working capital line to finance imported F&amp;B stock (beverage and packaged snacks) ahead of Q4 distribution contracts. Customer has requested expedited review given supplier payment terms.</textarea>
               </div>
 
               <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;">
-                <div style="font-size:12px;color:var(--muted);" id="submit-hint">Runs 3 agents &middot; typically under 10 seconds</div>
+                <div style="font-size:12px;color:var(--muted);" id="submit-hint">Runs 3 agents &middot; typically 10&ndash;15 seconds</div>
                 <div style="display:flex;gap:10px;">
-                  <button class="btn" style="background:var(--track);color:#334155;">Save draft</button>
+                  <button class="btn" id="btn-save" style="background:var(--track);color:#334155;">Save draft</button>
                   <button class="btn" id="btn-submit" style="background:var(--tealbtn);color:#fff;">Submit for AI assessment</button>
                 </div>
               </div>
@@ -174,10 +183,10 @@
             <div style="flex:1;display:flex;flex-direction:column;gap:18px;min-width:0;">
               <div style="background:var(--navy);border-radius:18px;padding:22px;color:#fff;">
                 <div style="font-size:13px;color:var(--muted);">Facility on request</div>
-                <div style="font-size:32px;font-weight:800;margin-top:6px;">S$450,000.00</div>
+                <div style="font-size:32px;font-weight:800;margin-top:6px;" id="preview-amount">S$450,000.00</div>
                 <div style="font-size:12px;color:var(--muted);margin-top:6px;">Routes to compliance &amp; synthesis agents on submit</div>
                 <div style="display:flex;gap:8px;margin-top:14px;">
-                  <div class="pill" style="background:var(--navy2);color:#e2e8f0;">SME banking</div>
+                  <div class="pill" style="background:var(--navy2);color:#e2e8f0;" id="preview-segment-pill">SME banking</div>
                   <div class="pill" style="background:var(--tealdark);color:var(--tealtext);">New request</div>
                 </div>
               </div>
@@ -209,9 +218,9 @@
           <div style="display:flex;align-items:flex-start;justify-content:space-between;">
             <div>
               <div class="h1">Running orchestration</div>
-              <div class="sub">Horizon Trade Partners Pte Ltd &middot; S$450,000.00 &middot; SME banking</div>
+              <div class="sub"><span class="js-customer-name">Horizon Trade Partners Pte Ltd</span> &middot; <span class="js-facility-amount">S$450,000.00</span> &middot; <span class="js-segment">SME banking</span></div>
             </div>
-            <button class="btn" style="background:#fff;border:1px solid var(--line);color:#334155;">Cancel run</button>
+            <button class="btn" id="btn-cancel" style="background:#fff;border:1px solid var(--line);color:#334155;">Cancel run</button>
           </div>
 
           <div style="display:flex;gap:24px;flex-grow:1;min-height:0;">
@@ -253,7 +262,7 @@
                         <div style="font-size:12px;color:var(--muted);">Scores AML/KYC risk &amp; exposure limits</div>
                       </div>
                     </div>
-                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-compliance">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-compliance">est. 3.2s</div></div>
+                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-compliance">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-compliance">est. 6&ndash;10s</div></div>
                   </div>
                   <div class="track" id="track-compliance" style="display:none;"><div id="bar-compliance" style="width:0%;background:var(--amber);"></div></div>
                 </div>
@@ -267,7 +276,7 @@
                         <div style="font-size:12px;color:var(--muted);">Will draft credit memorandum</div>
                       </div>
                     </div>
-                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-synthesis">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-synthesis">est. 2.4s</div></div>
+                    <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:var(--muted);" id="status-synthesis">Queued</div><div style="font-size:12px;color:var(--muted);" id="time-synthesis">est. 3&ndash;5s</div></div>
                   </div>
                 </div>
               </div>
@@ -302,7 +311,7 @@
               <div class="sub">CR-20264-0091 &middot; completed in <span id="run-time">6.2s</span> &middot; agents v1.0</div>
             </div>
             <div style="display:flex;gap:10px;">
-              <button class="btn" style="background:#fff;border:1px solid var(--line);color:#475569;">Export</button>
+              <button class="btn" id="btn-export" style="background:#fff;border:1px solid var(--line);color:#475569;">Export</button>
               <button class="btn" id="btn-continue" style="background:var(--tealbtn);color:#fff;">Continue to memo</button>
             </div>
           </div>
@@ -355,23 +364,23 @@
               <div class="h1">Memo ready for review</div>
               <div class="sub">Your name and the AI assessment are attached to the audit record</div>
             </div>
-            <div class="pill" style="background:var(--navy);color:#fff;">Rating&nbsp;<span id="decision-rating">34</span>&nbsp;/&nbsp;100</div>
+            <div class="pill" style="background:var(--navy);color:#fff;" id="decision-ref-pill">Rating&nbsp;<span id="decision-rating">34</span>&nbsp;/&nbsp;100</div>
           </div>
 
           <div style="display:flex;gap:22px;flex-grow:1;min-height:0;">
             <div class="card" style="flex:1;padding:22px;display:flex;flex-direction:column;gap:14px;overflow:auto;">
               <div style="font-size:15px;font-weight:700;">Facility</div>
-              <div style="font-size:30px;font-weight:800;">S$450,000.00</div>
+              <div style="font-size:30px;font-weight:800;" class="js-facility-amount">S$450,000.00</div>
               <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;margin-top:6px;">
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Reference</span><span style="font-weight:600;">CR-20264-0091</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Customer</span><span style="font-weight:600;">Horizon Trade Partners</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Segment</span><span style="font-weight:600;">SME banking</span></div>
-                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Tenure</span><span style="font-weight:600;">36 months</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Reference</span><span style="font-weight:600;" class="js-reference">CR-20264-0091</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Customer</span><span style="font-weight:600;" class="js-customer-name">Horizon Trade Partners Pte Ltd</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Segment</span><span style="font-weight:600;" class="js-segment">SME banking</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Tenure</span><span style="font-weight:600;" class="js-tenure">36 months</span></div>
                 <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted2);">Requested</span><span style="font-weight:600;" id="req-date">today</span></div>
               </div>
               <div style="background:var(--card);border-radius:12px;padding:14px;margin-top:auto;">
                 <div style="font-size:12px;color:var(--muted2);margin-bottom:4px;">Stated purpose</div>
-                <div style="font-size:13px;color:#334155;line-height:1.5;">Working capital line to finance imported F&amp;B stock ahead of Q4 distribution contracts.</div>
+                <div style="font-size:13px;color:#334155;line-height:1.5;" class="js-purpose">Working capital line to finance imported F&amp;B stock ahead of Q4 distribution contracts.</div>
               </div>
             </div>
 
@@ -392,8 +401,8 @@
               <div class="card" style="padding:20px;">
                 <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Record decision</div>
                 <div style="display:flex;flex-direction:column;gap:10px;">
-                  <button class="btn" style="background:#fef2f2;color:#b91c1c;width:100%;height:46px;">Return for edits</button>
-                  <button class="btn" style="background:var(--amberbg);color:var(--amberdark);width:100%;height:46px;">Escalate to credit committee</button>
+                  <button class="btn" id="btn-return" style="background:#fef2f2;color:#b91c1c;width:100%;height:46px;">Return for edits</button>
+                  <button class="btn" id="btn-escalate" style="background:var(--amberbg);color:var(--amberdark);width:100%;height:46px;">Escalate to credit committee</button>
                   <button class="btn" id="btn-approve" style="background:var(--tealbtn);color:#fff;width:100%;height:46px;">Approve &amp; send to compliance</button>
                 </div>
               </div>
@@ -443,9 +452,124 @@ function setAgent(name, status, color, textColor){
 let result = null;
 let startTime = null;
 let elapsedTimer = null;
+let complianceBarInterval = null;
+
+function showToast(msg, duration){
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.remove('show'), duration || 3200);
+}
+
+function flashNav(el){
+  el.classList.add('navitem-flash');
+  setTimeout(()=> el.classList.remove('navitem-flash'), 900);
+}
+
+// --- Editable intake fields: live preview sync ---
+function syncPreview(){
+  const amountDigits = document.getElementById('in-facility-amount').value.replace(/[^0-9.]/g,'');
+  const amt = Number(amountDigits || 0);
+  document.getElementById('preview-amount').textContent = 'S$' + amt.toLocaleString('en-SG', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const seg = document.querySelector('.seg-pill.active');
+  document.getElementById('preview-segment-pill').textContent = seg ? seg.dataset.segment : 'SME banking';
+}
+document.getElementById('in-facility-amount').addEventListener('input', syncPreview);
+document.querySelectorAll('.seg-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.seg-pill').forEach(o => { o.style.background = 'var(--track)'; o.style.color = 'var(--muted2)'; o.classList.remove('active'); });
+    p.style.background = 'var(--navy)'; p.style.color = '#fff'; p.classList.add('active');
+    syncPreview();
+  });
+});
+
+// --- Sidebar nav: every item responds ---
+document.getElementById('nav-overview').addEventListener('click', function(){
+  flashNav(this);
+  showToast('Overview — 9 requests in queue, 1 flagged priority, 3 approved this week.');
+});
+document.getElementById('nav-queue').addEventListener('click', function(){
+  flashNav(this);
+  showToast('Request queue — 9 open assessments, oldest waiting 6h.');
+});
+document.getElementById('nav-workflow').addEventListener('click', function(){
+  flashNav(this);
+  showToast('Workflow logic — Retrieval → Compliance scoring → Synthesis, orchestrated in Make.com with Google Gemini 2.5.');
+});
+function agentNavClick(agentName, label){
+  return function(){
+    const noRunYet = document.getElementById('screen-main').classList.contains('active') && startTime === null;
+    if (noRunYet){
+      showToast('Submit a request to see the ' + label + ' agent run live.');
+      return;
+    }
+    show('screen-processing');
+    const row = document.getElementById('row-' + agentName);
+    row.scrollIntoView({behavior:'smooth', block:'center'});
+    row.classList.add('agent-row-highlight');
+    setTimeout(()=> row.classList.remove('agent-row-highlight'), 1400);
+  };
+}
+document.getElementById('nav-retrieval').addEventListener('click', agentNavClick('retrieval','retrieval'));
+document.getElementById('nav-compliance').addEventListener('click', agentNavClick('compliance','compliance'));
+document.getElementById('nav-synthesis').addEventListener('click', agentNavClick('synthesis','synthesis'));
+
+// --- Save draft ---
+document.getElementById('btn-save').addEventListener('click', () => {
+  showToast('Draft saved to Request queue.');
+});
+
+// --- Cancel run ---
+document.getElementById('btn-cancel').addEventListener('click', () => {
+  clearInterval(elapsedTimer);
+  clearInterval(complianceBarInterval);
+  result = null; startTime = null;
+  document.getElementById('btn-submit').disabled = false;
+  show('screen-main');
+  showToast('Run cancelled — no changes were saved.');
+});
+
+// --- Export (real PDF via browser print) ---
+document.getElementById('btn-export').addEventListener('click', () => window.print());
+
+// --- Decision screen actions ---
+document.getElementById('btn-return').addEventListener('click', () => {
+  show('screen-main');
+  showToast('Sent back for edits — form re-opened.');
+});
+document.getElementById('btn-escalate').addEventListener('click', () => {
+  showToast('Escalated to credit committee — awaiting senior review.');
+});
 
 document.getElementById('btn-submit').addEventListener('click', async () => {
   document.getElementById('btn-submit').disabled = true;
+
+  // Pull live values from the editable fields into the request
+  const custName = document.getElementById('in-customer-name').value.trim() || 'Horizon Trade Partners Pte Ltd';
+  const custId = document.getElementById('in-customer-id').value.trim() || 'CU-4471-90233';
+  const amountDigits = document.getElementById('in-facility-amount').value.replace(/[^0-9.]/g,'');
+  const tenureDigits = document.getElementById('in-tenure').value.replace(/[^0-9]/g,'');
+  const purpose = document.getElementById('in-purpose').value.trim() || REQUEST_PARAMS.purpose;
+  const segEl = document.querySelector('.seg-pill.active');
+  const segment = segEl ? segEl.dataset.segment : 'SME banking';
+  const amountNum = Number(amountDigits || REQUEST_PARAMS.loan_amount);
+  const tenureNum = tenureDigits || REQUEST_PARAMS.tenure_months;
+
+  REQUEST_PARAMS.customer_id = custId;
+  REQUEST_PARAMS.loan_amount = String(amountNum);
+  REQUEST_PARAMS.tenure_months = String(tenureNum);
+  REQUEST_PARAMS.purpose = purpose;
+  REQUEST_PARAMS.segment = segment;
+  REQUEST_PARAMS.rm_name = REQUEST_PARAMS.rm_name || 'Alex Tan';
+
+  const amountLabel = 'S$' + amountNum.toLocaleString('en-SG', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.querySelectorAll('.js-customer-name').forEach(el => el.textContent = custName);
+  document.querySelectorAll('.js-facility-amount').forEach(el => el.textContent = amountLabel);
+  document.querySelectorAll('.js-segment').forEach(el => el.textContent = segment);
+  document.querySelectorAll('.js-tenure').forEach(el => el.textContent = tenureNum + ' months');
+  document.querySelectorAll('.js-purpose').forEach(el => el.textContent = purpose);
+
   show('screen-processing');
   runProcessingAnimation();
 
@@ -498,13 +622,28 @@ function runProcessingAnimation(){
     document.getElementById('track-compliance').style.display = 'block';
     document.getElementById('interim').textContent = 'Scoring…';
     let p = 0;
-    const iv = setInterval(()=>{
-      p = Math.min(p + 12, 92);
+    complianceBarInterval = setInterval(()=>{
+      p = Math.min(p + 3, 97);
       document.getElementById('bar-compliance').style.width = p+'%';
-      if (p >= 92) clearInterval(iv);
-    }, 220);
+    }, 300);
     addLog('3.2s', 'Compliance: flagged industry concentration, F&amp;B distribution sector', true);
   }, 1500);
+
+  // Real processing keeps running in the background (two live Gemini calls) —
+  // these keep the log visibly moving instead of going quiet while we wait.
+  const logSteps = [
+    [4500, '4.5s', 'Compliance: checking exposure ratio against SME thresholds'],
+    [6500, '6.5s', 'Compliance agent scoring via Google Gemini 2.5'],
+    [8500, '8.5s', 'Compliance: cross-referencing repayment history'],
+    [10500, '10.5s', 'Compliance agent handing off to synthesis agent'],
+    [12500, '12.5s', 'Synthesis: drafting recommendation and covering note']
+  ];
+  logSteps.forEach(([delay, t, msg]) => {
+    setTimeout(()=> { if (result === null) addLog(t, msg); }, delay);
+  });
+  setTimeout(()=> {
+    if (result === null) addLog('~16s', 'Still finalising — Gemini can occasionally take a little longer', true);
+  }, 16000);
 
   // Wait for real result before finishing compliance + synthesis
   const poll = setInterval(()=>{
@@ -517,6 +656,7 @@ function runProcessingAnimation(){
 
 function finishProcessing(){
   clearInterval(elapsedTimer);
+  clearInterval(complianceBarInterval);
   const totalTime = ((Date.now()-startTime)/1000).toFixed(1);
 
   setAgent('compliance','Complete','#0f9c93');
