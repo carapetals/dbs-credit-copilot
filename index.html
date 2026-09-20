@@ -569,6 +569,11 @@ function show(id){
   document.querySelectorAll('.navitem').forEach(n => n.classList.remove('navitem-active'));
   const navId = NAV_FOR_SCREEN[id];
   if (navId) document.getElementById(navId).classList.add('navitem-active');
+  // Whenever the New request screen is shown (fresh load, nav click, cancel,
+  // return-for-edits, or after a completed run), the form must be submittable.
+  if (id === 'screen-main') {
+    document.getElementById('btn-submit').disabled = false;
+  }
 }
 
 function setAgent(name, status, color, textColor){
@@ -718,6 +723,10 @@ document.getElementById('btn-escalate').addEventListener('click', () => {
 
 document.getElementById('btn-submit').addEventListener('click', async () => {
   document.getElementById('btn-submit').disabled = true;
+  // Reset run state so a second/subsequent submission never reuses a
+  // previous run's leftover result before the new fetch has responded.
+  result = null;
+  startTime = null;
 
   // Pull live values from the editable fields into the request
   const custName = document.getElementById('in-customer-name').value.trim() || 'Horizon Trade Partners Pte Ltd';
